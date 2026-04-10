@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎰 PlanHub Casino</title>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    :root {
+      --bg:    #0c1a0c;
+      --bg2:   #152316;
+      --felt:  #1a4a1a;
+      --felt2: #1f5c1f;
+      --gold:  #f1c40f;
+      --gold2: #c9a700;
+      --green: #2ecc71;
+      --red:   #e74c3c;
+      --blue:  #3498db;
+      --gray:  #888;
+      --white: #f0f0f0;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── CANVAS ──────────────────────────────── */
+    #confetti-canvas {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none; z-index: 9999;
+    }
+
+    /* ── AUTH ────────────────────────────────── */
+    #auth-screen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; flex-direction: column;
+    }
+    .auth-card {
+      background: var(--bg2);
+      border: 2px solid var(--gold);
+      border-radius: 18px; padding: 52px 44px;
+      text-align: center; max-width: 400px;
+      box-shadow: 0 0 48px rgba(241,196,15,.25);
+    }
+    .auth-logo  { font-size: 60px; margin-bottom: 14px; }
+    .auth-title { font-size: 34px; font-weight: 800; color: var(--gold); margin-bottom: 6px; }
+    .auth-sub   { color: var(--gray); font-size: 14px; margin-bottom: 32px; }
+    .btn-google {
+      background: #fff; color: #333; border: none;
+      padding: 14px 28px; border-radius: 8px;
+      font-size: 16px; font-weight: 600; cursor: pointer;
+      display: flex; align-items: center; gap: 10px; margin: 0 auto;
+      transition: transform .1s;
+    }
+    .btn-google:hover { transform: scale(1.03); }
+    .auth-note { font-size: 12px; color: var(--gray); margin-top: 14px; }
+
+    /* ── APP SHELL ───────────────────────────── */
+    #app { display: none; flex-direction: column; min-height: 100vh; }
+
+    header {
+      background: linear-gradient(135deg,#091409,#163016);
+      border-bottom: 3px solid var(--gold);
+      padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .header-title {
+      font-size: 26px; font-weight: 800; color: var(--gold);
+      text-shadow: 0 0 18px rgba(241,196,15,.5); letter-spacing: 2px;
+    }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .live-dot {
+      display: inline-block; width: 9px; height: 9px;
+      background: var(--green); border-radius: 50%;
+      animation: pulse 2s infinite; margin-right: 6px;
+    }
+    @keyframes pulse {
+      0%,100%{ opacity:1; transform:scale(1); }
+      50%    { opacity:.5; transform:scale(.8); }
+    }
+    .contest-label { font-size: 13px; color: var(--gray); }
+    .user-info     { font-size: 13px; }
+    .btn-logout {
+      background: none; border: 1px solid var(--gray);
+      color: var(--gray); padding: 4px 10px;
+      border-radius: 4px; cursor: pointer; font-size: 12px;
+    }
+
+    /* ── TABS ────────────────────────────────── */
+    .tab-nav {
+      display: flex; background: #091409;
+      border-bottom: 2px solid #222; padding: 0 24px;
+    }
+    .nav-tab {
+      padding: 14px 22px; cursor: pointer;
+      font-size: 15px; font-weight: 600; color: var(--gray);
+      border-bottom: 3px solid transparent; transition: all .2s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .nav-tab:hover  { color: var(--white); }
+    .nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+    /* tab-content is a flex row (main area + leaderboard) */
+    .tab-content { display: none; flex: 1; padding: 24px; gap: 24px; }
+    .tab-content.active { display: flex; }
+
+    /* ── DICE TAB ────────────────────────────── */
+    .dice-main {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: 22px;
+    }
+    .player-greeting { text-align: center; }
+    .player-greeting h2 { font-size: 22px; color: var(--gold); }
+    .rolls-badge {
+      display: inline-block; background: var(--felt);
+      border: 2px solid var(--gold); border-radius: 10px;
+      padding: 7px 18px; margin-top: 8px; font-size: 15px;
+    }
+    .rolls-badge span { font-size: 22px; font-weight: 800; color: var(--gold); }
+    .sync-note { font-size: 11px; color: var(--gray); margin-top: 4px; }
+
+    .dice-arena {
+      background: var(--felt); border: 3px solid var(--gold2);
+      border-radius: 20px; padding: 28px 32px;
+      width: 100%; max-width: 540px; text-align: center;
+    }
+    .dice-row {
+      display: flex; justify-content: space-around;
+      align-items: center; margin-bottom: 18px;
+    }
+    .dice-group  { text-align: center; }
+    .dice-group label {
+      font-size: 11px; color: var(--gray);
+      text-transform: uppercase; letter-spacing: 1px;
+      display: block; margin-bottom: 8px;
+    }
+    .dice-pair { display: flex; gap: 8px; justify-content: center; }
+    .die {
+      width: 62px; height: 62px; background: #fff;
+      border-radius: 11px; border: 2px solid #ccc;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; color: #222;
+      box-shadow: 3px 3px 8px rgba(0,0,0,.5);
+    }
+    .die.rolling { animation: dieRoll .12s infinite; }
+    @keyframes dieRoll {
+      0%  { transform: rotate(0deg)   scale(1);    }
+      25% { transform: rotate(15deg)  scale(.93);  }
+      50% { transform: rotate(-12deg) scale(1.06); }
+      75% { transform: rotate(8deg)   scale(.95);  }
+      100%{ transform: rotate(0deg)   scale(1);    }
+    }
+    .dice-vs { font-size: 26px; font-weight: 800; color: var(--gold); }
+
+    .dice-totals { display: flex; justify-content: space-around; margin-bottom: 14px; }
+    .dice-total { text-align: center; }
+    .dice-total .total-num { font-size: 42px; font-weight: 800; }
+    .dice-total .total-lbl { font-size: 11px; color: var(--gray); text-transform: uppercase; }
+
+    .btn-roll {
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      color: #000; border: none; padding: 15px 44px;
+      font-size: 19px; font-weight: 800; border-radius: 12px;
+      cursor: pointer; letter-spacing: 1px; text-transform: uppercase;
+      box-shadow: 0 4px 16px rgba(241,196,15,.4); transition: all .15s;
+    }
+    .btn-roll:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(241,196,15,.6); }
+    .btn-roll:disabled { opacity: .5; cursor: not-allowed; }
+
+    .result-banner {
+      margin-top: 14px; min-height: 56px;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .result-win  { font-size: 24px; font-weight: 800; color: var(--green); animation: bounceIn .4s ease; }
+    .result-lose { font-size: 28px; font-weight: 800; color: var(--red);   animation: bounceIn .4s ease; text-transform: uppercase; }
+    .result-tie  { font-size: 20px; font-weight: 800; color: var(--gold);  animation: bounceIn .4s ease; }
+    .prize-display { font-size: 38px; font-weight: 800; color: var(--green); margin-top: 2px; }
+    @keyframes bounceIn {
+      0%  { transform: scale(.3);  opacity: 0; }
+      60% { transform: scale(1.1); }
+      80% { transform: scale(.95); }
+      100%{ transform: scale(1);   opacity: 1; }
+    }
+    .multiplier-badge {
+      display: inline-block; background: var(--gold); color: #000;
+      font-weight: 800; font-size: 12px; padding: 2px 7px; border-radius: 5px;
+    }
+
+    .dice-stats { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+    .stat-chip { background: var(--bg2); border: 1px solid #2a3a2a; border-radius: 10px; padding: 12px 18px; text-align: center; }
+    .stat-chip .sv { font-size: 26px; font-weight: 800; color: var(--gold); }
+    .stat-chip .sl { font-size: 11px; color: var(--gray); text-transform: uppercase; margin-top: 2px; }
+
+    /* ── BLACKJACK TAB ───────────────────────── */
+    .bj-main {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; gap: 18px;
+    }
+    .bj-locked {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 14px; color: var(--gray);
+    }
+    .lock-icon { font-size: 70px; opacity: .35; }
+    .bj-locked h3 { font-size: 22px; color: var(--white); }
+
+    .bj-unlocked {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 16px; width: 100%;
+    }
+    .bj-bankroll { text-align: center; }
+    .bj-bankroll .bv { font-size: 30px; font-weight: 800; color: var(--green); }
+    .bj-bankroll .bl { font-size: 11px; color: var(--gray); text-transform: uppercase; }
+
+    .bj-table {
+      background: var(--felt); border: 3px solid var(--gold2);
+      border-radius: 20px; padding: 22px 28px;
+      width: 100%; max-width: 600px;
+    }
+
+    .zone-label {
+      font-size: 11px; text-transform: uppercase; color: var(--gray);
+      letter-spacing: 1px; margin-bottom: 8px;
+    }
+    .card-row {
+      display: flex; justify-content: center;
+      gap: 6px; flex-wrap: wrap; min-height: 90px;
+    }
+    .card {
+      width: 60px; height: 88px; background: #fff;
+      border-radius: 8px; box-shadow: 2px 3px 8px rgba(0,0,0,.45);
+      border: 1px solid #ddd; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; flex-shrink: 0;
+      animation: cardSlide .3s ease; position: relative; overflow: hidden;
+    }
+    @keyframes cardSlide {
+      from { transform: translateY(-18px) rotate(-4deg); opacity: 0; }
+      to   { transform: translateY(0)     rotate(0deg);  opacity: 1; }
+    }
+    .card.red   { color: #c0392b; }
+    .card.black { color: #1a1a1a; }
+    .card-suit  { font-size: 14px; line-height: 1; }
+    .card.facedown {
+      background: repeating-linear-gradient(
+        45deg, #1a3a8a, #1a3a8a 4px, #2255bb 4px, #2255bb 8px
+      );
+      color: transparent; border: 2px solid #4488cc;
+    }
+    .hand-total-txt { font-size: 13px; color: var(--gray); margin-top: 4px; text-align: center; }
+    .hand-total-txt.bust { color: var(--red); font-weight: 700; }
+    .hand-total-txt.bj   { color: var(--gold); font-weight: 700; }
+
+    .bj-divider { border: none; border-top: 1px solid #2a4a2a; margin: 12px 0; }
+
+    .split-hands { display: flex; gap: 14px; justify-content: center; }
+    .split-hand { border: 2px solid transparent; border-radius: 10px; padding: 8px; transition: border-color .2s; }
+    .split-hand.active-hand { border-color: var(--gold); }
+
+    /* Wager */
+    .bj-wager-section {
+      background: rgba(0,0,0,.35); border-radius: 12px;
+      padding: 14px 18px; text-align: center; margin-bottom: 10px;
+    }
+    .wager-lbl { font-size: 13px; color: var(--gray); margin-bottom: 8px; }
+    .wager-row { display: flex; align-items: center; gap: 12px; justify-content: center; }
+    .wager-input {
+      background: var(--bg); border: 2px solid var(--gold);
+      color: var(--gold); font-size: 22px; font-weight: 800;
+      padding: 7px 14px; border-radius: 8px;
+      width: 110px; text-align: center;
+    }
+    .wager-input:focus { outline: none; }
+    .wager-slider { width: 180px; accent-color: var(--gold); }
+
+    /* BJ action buttons */
+    .bj-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
+    .btn-bj {
+      padding: 11px 22px; font-size: 14px; font-weight: 700;
+      border-radius: 8px; border: none; cursor: pointer;
+      transition: all .15s; text-transform: uppercase; letter-spacing: .5px;
+    }
+    .btn-bj:hover:not(:disabled) { transform: translateY(-2px); }
+    .btn-bj:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-deal    { background: var(--gold);  color: #000; }
+    .btn-hit     { background: var(--green); color: #000; }
+    .btn-stand   { background: #e67e22;      color: #fff; }
+    .btn-double  { background: #9b59b6;      color: #fff; }
+    .btn-split   { background: var(--blue);  color: #fff; }
+    .btn-newhand { background: var(--gold2); color: #000; }
+
+    .bj-result {
+      min-height: 50px; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; text-align: center;
+    }
+    .bj-rtxt { font-size: 26px; font-weight: 800; animation: bounceIn .4s ease; }
+    .bj-win  { color: var(--green); }
+    .bj-lose { color: var(--red);   }
+    .bj-push { color: var(--gray);  }
+    .bj-bjtxt{ color: var(--gold);  }
+
+    .bj-stats { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+    /* ── LEADERBOARD ─────────────────────────── */
+    .leaderboard { width: 270px; flex-shrink: 0; }
+    .lb-header {
+      font-size: 13px; font-weight: 700; color: var(--gold);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
+    }
+    .lb-list { display: flex; flex-direction: column; gap: 5px; }
+    .lb-row {
+      background: var(--bg2); border-radius: 8px;
+      padding: 9px 13px; display: flex; align-items: center;
+      gap: 9px; border: 1px solid transparent; transition: border-color .2s;
+    }
+    .lb-row.me     { border-color: var(--gold); }
+    .lb-row.leader { border-color: var(--green); }
+    .lb-rank    { font-size: 12px; color: var(--gray); width: 20px; text-align: right; flex-shrink: 0; }
+    .lb-name    { flex: 1; font-size: 13px; font-weight: 600; }
+    .lb-meta    { font-size: 10px; color: var(--gray); margin-top: 1px; }
+    .lb-amount  { font-size: 14px; font-weight: 800; color: var(--green); }
+    .lb-amount.zero { color: var(--gray); }
+
+    /* ── ADMIN ───────────────────────────────── */
+    .admin-main { flex: 1; max-width: 580px; }
+    .admin-title { font-size: 20px; font-weight: 700; color: var(--gold); margin-bottom: 20px; }
+    .admin-auth-wrap { max-width: 380px; margin: 40px auto; text-align: center; }
+    .admin-auth-wrap h2 { color: var(--gold); margin-bottom: 12px; }
+    .admin-auth-wrap p  { color: var(--gray); font-size: 14px; margin-bottom: 20px; }
+    .asec { background: var(--bg2); border: 1px solid #2a3a2a; border-radius: 12px; padding: 20px; margin-bottom: 14px; }
+    .asec h3 { font-size: 13px; text-transform: uppercase; color: var(--gray); letter-spacing: 1px; margin-bottom: 14px; }
+    .afg { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
+    .afg label { font-size: 13px; }
+    .ain { background: var(--bg); border: 1px solid #444; color: var(--white); padding: 8px 11px; border-radius: 6px; font-size: 14px; }
+    .ain:focus { outline: none; border-color: var(--gold); }
+    .arow { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+    .toggle-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .toggle {
+      width: 44px; height: 24px; background: #444;
+      border-radius: 12px; position: relative; cursor: pointer; transition: background .2s;
+    }
+    .toggle.on { background: var(--green); }
+    .toggle::after {
+      content: ''; position: absolute; width: 20px; height: 20px;
+      background: #fff; border-radius: 50%; top: 2px; left: 2px; transition: left .2s;
+    }
+    .toggle.on::after { left: 22px; }
+    .abtn {
+      padding: 10px 18px; font-size: 14px; font-weight: 600;
+      border: none; border-radius: 8px; cursor: pointer; transition: all .15s;
+    }
+    .abtn:hover { transform: translateY(-1px); }
+    .abtn.p { background: var(--gold);  color: #000; }
+    .abtn.s { background: var(--blue);  color: #fff; }
+    .abtn.d { background: var(--red);   color: #fff; }
+    .admin-msg { font-size: 13px; margin-top: 8px; }
+
+    /* ── TOASTS ──────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--bg2); border: 1px solid var(--gold);
+      color: var(--white); padding: 11px 18px;
+      border-radius: 10px; font-size: 14px;
+      z-index: 10000; animation: toastIn .3s ease; max-width: 290px;
+    }
+    @keyframes toastIn {
+      from { transform: translateX(110%); opacity: 0; }
+      to   { transform: translateX(0);    opacity: 1; }
+    }
+
+    @media (max-width: 760px) {
+      .leaderboard { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+<audio id="aud-cheers"   src="audio/cheers.mp3"   preload="auto"></audio>
+<audio id="aud-sigh"     src="audio/sigh.mp3"     preload="auto"></audio>
+<audio id="aud-womp"     src="audio/wompwomp.mp3" preload="auto"></audio>
+<audio id="aud-drumroll" src="audio/drumroll.mp3" preload="auto"></audio>
+
+<!-- ═══════════════ AUTH ═══════════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">🎰</div>
+    <div class="auth-title">PlanHub Casino</div>
+    <div class="auth-sub">Sign in with your PlanHub Google account to play</div>
+    <button class="btn-google" onclick="signIn()">
+      <svg width="20" height="20" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+      </svg>
+      Sign in with Google
+    </button>
+    <div class="auth-note">@planhub.com accounts only</div>
+  </div>
+</div>
+
+<!-- ═══════════════ APP ═══════════════ -->
+<div id="app">
+  <header>
+    <div class="header-title">🎰 PlanHub Casino</div>
+    <div class="header-right">
+      <div>
+        <span class="live-dot"></span>
+        <span class="contest-label" id="contest-label">Loading…</span>
+      </div>
+      <span class="user-info" id="user-display"></span>
+      <button class="btn-logout" onclick="signOut()">Sign Out</button>
+    </div>
+  </header>
+
+  <div class="tab-nav">
+    <div class="nav-tab active" data-tab="dice"      onclick="switchTab('dice')">🎲 Dice Roll</div>
+    <div class="nav-tab"        data-tab="blackjack" onclick="switchTab('blackjack')" id="bj-nav-tab">🃏 Blackjack <span id="bj-lock-icon">🔒</span></div>
+    <div class="nav-tab"        data-tab="admin"     onclick="switchTab('admin')">⚙️ Admin</div>
+  </div>
+
+  <!-- ── DICE TAB ── -->
+  <div id="tab-dice" class="tab-content active">
+    <div class="dice-main">
+      <div class="player-greeting">
+        <h2 id="dice-greeting">Welcome!</h2>
+        <div class="rolls-badge">Rolls Available: <span id="rolls-count">0</span></div>
+        <div class="sync-note" id="sync-note"></div>
+      </div>
+
+      <div class="dice-arena">
+        <div class="dice-row">
+          <div class="dice-group">
+            <label>You</label>
+            <div class="dice-pair">
+              <div class="die" id="pd1">⚀</div>
+              <div class="die" id="pd2">⚀</div>
+            </div>
+          </div>
+          <div class="dice-vs">VS</div>
+          <div class="dice-group">
+            <label>Computer</label>
+            <div class="dice-pair">
+              <div class="die" id="cd1">⚀</div>
+              <div class="die" id="cd2">⚀</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dice-totals" id="dice-totals" style="display:none">
+          <div class="dice-total">
+            <div class="total-num" id="p-total">—</div>
+            <div class="total-lbl">Your Total</div>
+          </div>
+          <div class="dice-total">
+            <div class="total-num" id="c-total">—</div>
+            <div class="total-lbl">Computer</div>
+          </div>
+        </div>
+
+        <button class="btn-roll" id="roll-btn" onclick="startRoll()">🎲 ROLL THE DICE</button>
+        <div class="result-banner" id="dice-result"></div>
+      </div>
+
+      <div class="dice-stats">
+        <div class="stat-chip"><div class="sv" id="st-wins">0</div><div class="sl">Dice Wins</div></div>
+        <div class="stat-chip"><div class="sv" id="st-losses">0</div><div class="sl">Dice Losses</div></div>
+        <div class="stat-chip"><div class="sv" id="st-winnings">$0</div><div class="sl">Total Winnings</div></div>
+      </div>
+    </div>
+
+    <div class="leaderboard">
+      <div class="lb-header">🏆 Leaderboard</div>
+      <div class="lb-list" id="lb-dice"></div>
+    </div>
+  </div>
+
+  <!-- ── BLACKJACK TAB ── -->
+  <div id="tab-blackjack" class="tab-content">
+    <div class="bj-main" id="bj-main">
+      <div class="bj-locked" id="bj-locked">
+        <div class="lock-icon">🔒</div>
+        <h3>Blackjack Table Locked</h3>
+        <p>Win at the dice table first to unlock your seat.</p>
+      </div>
+
+      <div class="bj-unlocked" id="bj-unlocked" style="display:none">
+        <div class="bj-bankroll">
+          <div class="bv" id="bj-bankroll-val">$0</div>
+          <div class="bl">Your Bankroll</div>
+        </div>
+
+        <div class="bj-table">
+          <!-- Dealer -->
+          <div class="zone-label">Dealer <span id="dealer-total-lbl" class="hand-total-txt"></span></div>
+          <div class="card-row" id="dealer-cards"></div>
+
+          <hr class="bj-divider">
+
+          <!-- Player -->
+          <div class="zone-label">You <span id="player-total-lbl" class="hand-total-txt"></span></div>
+          <div id="player-hands-wrap">
+            <div class="card-row" id="player-cards"></div>
+          </div>
+
+          <!-- Result -->
+          <div class="bj-result" id="bj-result"></div>
+
+          <!-- Wager -->
+          <div class="bj-wager-section" id="bj-wager-section">
+            <div class="wager-lbl">Your Wager</div>
+            <div class="wager-row">
+              <input type="range"  class="wager-slider" id="wager-slider" min="1" max="100" value="25" oninput="syncWager('slider')">
+              <input type="number" class="wager-input"  id="wager-input"  min="1" max="100" value="25" oninput="syncWager('input')">
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="bj-actions">
+            <button class="btn-bj btn-deal"    id="btn-deal"    onclick="dealHand()">Deal</button>
+            <button class="btn-bj btn-hit"     id="btn-hit"     onclick="playerHit()"    disabled style="display:none">Hit</button>
+            <button class="btn-bj btn-stand"   id="btn-stand"   onclick="playerStand()"  disabled style="display:none">Stand</button>
+            <button class="btn-bj btn-double"  id="btn-double"  onclick="playerDouble()" disabled style="display:none">Double</button>
+            <button class="btn-bj btn-split"   id="btn-split"   onclick="playerSplit()"          style="display:none">Split</button>
+            <button class="btn-bj btn-newhand" id="btn-newhand" onclick="newHand()">New Hand</button>
+          </div>
+        </div>
+
+        <div class="bj-stats">
+          <div class="stat-chip"><div class="sv" id="bj-st-wins">0</div><div class="sl">BJ Wins</div></div>
+          <div class="stat-chip"><div class="sv" id="bj-st-losses">0</div><div class="sl">BJ Losses</div></div>
+          <div class="stat-chip"><div class="sv" id="bj-st-pushes">0</div><div class="sl">Pushes</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="leaderboard">
+      <div class="lb-header">🏆 Leaderboard</div>
+      <div class="lb-list" id="lb-bj"></div>
+    </div>
+  </div>
+
+  <!-- ── ADMIN TAB ── -->
+  <div id="tab-admin" class="tab-content">
+    <!-- Auth wall -->
+    <div class="admin-main" id="admin-auth-wrap">
+      <div class="admin-auth-wrap">
+        <h2>🔐 Admin Access</h2>
+        <p>Enter the admin password to manage the casino.</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-bottom:10px">
+          <input type="password" class="ain" id="admin-pw" placeholder="Password" style="width:180px"
+                 onkeydown="if(event.key==='Enter')checkPw()">
+          <button class="abtn p" onclick="checkPw()">Enter</button>
+        </div>
+        <div id="pw-err" style="color:var(--red);font-size:13px"></div>
+      </div>
+    </div>
+
+    <!-- Admin panel (shown after auth) -->
+    <div class="admin-main" id="admin-panel" style="display:none">
+      <div class="admin-title">⚙️ Casino Admin Panel</div>
+
+      <div class="asec">
+        <h3>Prize Settings</h3>
+        <div class="afg">
+          <label>Standard Prize Per Win ($)</label>
+          <input type="number" class="ain" id="adm-prize" min="0" placeholder="e.g. 25">
+        </div>
+        <div class="afg">
+          <label>Contest Label</label>
+          <input type="text" class="ain" id="adm-label" placeholder="e.g. April 11, 2026">
+        </div>
+        <button class="abtn p" onclick="savePrize()">Save</button>
+      </div>
+
+      <div class="asec">
+        <h3>Surprise Mode</h3>
+        <div class="toggle-wrap">
+          <div class="toggle" id="surp-toggle" onclick="toggleSurprise()"></div>
+          <span id="surp-lbl">Surprise Mode: OFF</span>
+        </div>
+        <div id="surp-range" style="display:none">
+          <div class="arow">
+            <div class="afg" style="flex:1"><label>Min ($)</label><input type="number" class="ain" id="adm-smin" min="0"></div>
+            <div class="afg" style="flex:1"><label>Max ($)</label><input type="number" class="ain" id="adm-smax" min="0"></div>
+            <button class="abtn s" onclick="saveSurprise()" style="margin-bottom:1px">Save Range</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="asec">
+        <h3>Blackjack Table</h3>
+        <div class="toggle-wrap">
+          <div class="toggle" id="bj-toggle" onclick="toggleBJ()"></div>
+          <span id="bj-toggle-lbl">Blackjack: ENABLED</span>
+        </div>
+      </div>
+
+      <div class="asec">
+        <h3>Grant Rolls</h3>
+        <div class="arow">
+          <div class="afg" style="flex:1">
+            <label>Player</label>
+            <select class="ain" id="grant-sel" style="width:100%"></select>
+          </div>
+          <div class="afg" style="width:80px">
+            <label>Rolls</label>
+            <input type="number" class="ain" id="grant-n" value="1" min="1" max="20">
+          </div>
+          <button class="abtn s" onclick="grantRolls()" style="margin-bottom:1px">Grant</button>
+        </div>
+      </div>
+
+      <div class="asec">
+        <h3>Reset Game</h3>
+        <p style="color:var(--gray);font-size:13px;margin-bottom:12px">Clears all player stats and rolls. Preserves prize settings and password.</p>
+        <button class="abtn d" onclick="resetGame()">🔄 Reset All Player Data</button>
+      </div>
+
+      <div class="asec">
+        <h3>Change Password</h3>
+        <div class="arow">
+          <div class="afg" style="flex:1"><input type="password" class="ain" id="new-pw" placeholder="New password"></div>
+          <button class="abtn s" onclick="changePassword()" style="margin-bottom:1px">Update</button>
+        </div>
+      </div>
+
+      <div class="admin-msg" id="adm-msg"></div>
+    </div>
+  </div>
+</div><!-- end #app -->
+
+<script>
+// ═══════════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyCVfTp-GDRHtdp0Tb6VGiTws9I0OB9RM_k",
+  authDomain: "planhub-sales-internal-tools.firebaseapp.com",
+  databaseURL: "https://planhub-sales-internal-tools-default-rtdb.firebaseio.com",
+  projectId: "planhub-sales-internal-tools",
+  storageBucket: "planhub-sales-internal-tools.firebasestorage.app",
+  messagingSenderId: "95602436947",
+  appId: "1:95602436947:web:575946d6535e7387e8cfa6"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.database();
+
+// ═══════════════════════════════════════════════
+// ROSTER  (email → player meta)
+// ═══════════════════════════════════════════════
+const ROSTER = {
+  // AEs
+  "mike.fecca@planhub.com":        { name:"Mike Fecca",        id:"629527681",    role:"AE"    },
+  "jason.glass@planhub.com":       { name:"Jason Glass",       id:"1792198284",   role:"AE"    },
+  "steven.tribble@planhub.com":    { name:"Steven Tribble",    id:"49902523",     role:"AE"    },
+  "kristin.dolan@planhub.com":     { name:"Kristin Dolan",     id:"1391657011",   role:"AE"    },
+  "benjamin.sager@planhub.com":    { name:"Ben Sager",         id:"77683167",     role:"AE"    },
+  "kelly.drew@planhub.com":        { name:"Kelly Drew",        id:"672261556",    role:"AE"    },
+  "chris.gomez@planhub.com":       { name:"Chris Gomez",       id:"308948531",    role:"AE"    },
+  "bob.bates@planhub.com":         { name:"Bob Bates",         id:"2123553241",   role:"AE"    },
+  "jean.davis@planhub.com":        { name:"Jean Davis",        id:"303944088",    role:"AE"    },
+  "connor.gardner@planhub.com":    { name:"Connor Gardner",    id:"76001722",     role:"AE"    },
+  "anthony.ventresca@planhub.com": { name:"Anthony Ventresca", id:"86821313",     role:"AE"    },
+  "cherish.johnson@planhub.com":   { name:"Cherish Johnson",   id:"77683120",     role:"AE"    },
+  "ken.chesnut@planhub.com":       { name:"Ken Chesnut",       id:"562318206",    role:"AE"    },
+  "frank.colon@planhub.com":       { name:"Frank Colon",       id:"1319491554",   role:"AE"    },
+  "julie.prinssen@planhub.com":    { name:"Julie Prinssen",    id:"51523309",     role:"AE"    },
+  "john.morgan@planhub.com":       { name:"John Morgan",       id:"86821314",     role:"AE"    },
+  "wendy.best@planhub.com":        { name:"Wendy Best",        id:"43905775",     role:"AE"    },
+  "mark.fine@planhub.com":         { name:"Mark Fine",         id:"444356199",    role:"AE"    },
+  // SDRs (SC + SP; Upsell excluded from contest)
+  "marcus.woods@planhub.com":      { name:"Marcus Woods",      id:"689021749",    role:"SDR"   },
+  "ryan.wolfman@planhub.com":      { name:"Ryan Wolfman",      id:"1876970213",   role:"SDR"   },
+  "kyle.volp@planhub.com":         { name:"Kyle Volp",         id:"80077717",     role:"SDR"   },
+  "izzy.alvarez@planhub.com":      { name:"Izzy Alvarez",      id:"81910750",     role:"SDR"   },
+  "james.bartley@planhub.com":     { name:"James Bartley",     id:"1280205714",   role:"SDR"   },
+  "kevin.songco@planhub.com":      { name:"Kevin Songco",      id:"80172587",     role:"SDR"   },
+  "nicole.williams@planhub.com":   { name:"Nicole Williams",   id:"1283636153",   role:"SDR"   },
+  "nathan.bauscher@planhub.com":   { name:"Nathan Bauscher",   id:"688732035",    role:"SDR"   },
+  // Admin-only (can access admin panel but not players on leaderboard)
+  "josh.rank@planhub.com":         { name:"Josh Rank",         id:"826736575",    role:"Admin" },
+  "john.maurer@planhub.com":       { name:"John Maurer",       id:"43905666",     role:"Admin" },
+  "nick.cappello@planhub.com":     { name:"Nick Cappello",     id:"86626888",     role:"Admin" },
+};
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let me        = null;   // current user (ROSTER entry + email)
+let myData    = {};     // own Firebase player node
+let settings  = {};     // planhub_casino/settings
+let allPlayers= {};     // all player nodes
+let adminAuthed = false;
+
+const MAX_MULT = 8;     // 2^3 tie multiplier cap
+
+// Blackjack state
+const bj = {
+  deck: [], playerHands: [], dealerCards: [],
+  activeIdx: 0, wager: 25, splitWagers: [],
+  phase: 'idle',  // idle | player | dealer | done
+};
+
+// ═══════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════
+function signIn() {
+  const p = new firebase.auth.GoogleAuthProvider();
+  p.setCustomParameters({ hd: 'planhub.com' });
+  auth.signInWithPopup(p).catch(e => toast('Sign-in failed: ' + e.message));
+}
+function signOut() { auth.signOut(); }
+
+auth.onAuthStateChanged(user => {
+  if (!user) {
+    me = null;
+    document.getElementById('auth-screen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    return;
+  }
+  const email = user.email.toLowerCase();
+  if (!email.endsWith('@planhub.com')) {
+    toast('Only @planhub.com accounts allowed.');
+    auth.signOut(); return;
+  }
+  const roster = ROSTER[email];
+  if (!roster) {
+    document.getElementById('auth-screen').innerHTML = `
+      <div class="auth-card">
+        <div class="auth-logo">🎰</div>
+        <div class="auth-title" style="font-size:20px">Not on the roster</div>
+        <p style="color:var(--gray);margin:14px 0">Contact Josh to be added to the casino.</p>
+        <button class="abtn d" onclick="auth.signOut()">Sign Out</button>
+      </div>`;
+    return;
+  }
+  me = { ...roster, email };
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  document.getElementById('user-display').textContent = `${me.name} (${me.role})`;
+  initApp();
+});
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+function initApp() {
+  // Bootstrap settings if missing
+  db.ref('planhub_casino/settings').once('value').then(s => {
+    if (!s.exists()) {
+      db.ref('planhub_casino/settings').set({
+        adminPassword: 'casino2026',
+        prizeAmount: null,
+        surpriseMode: false,
+        surpriseModeMin: null, surpriseModeMax: null,
+        bjEnabled: true,
+        contestLabel: 'April 11, 2026'
+      });
+    }
+  });
+
+  // Bootstrap own player node
+  if (me.role !== 'Admin') {
+    db.ref(`planhub_casino/players/${me.id}`).once('value').then(s => {
+      if (!s.exists()) {
+        db.ref(`planhub_casino/players/${me.id}`).set({
+          name: me.name, email: me.email, role: me.role,
+          rollsAvailable:0, rollsEarned:0,
+          diceWins:0, diceLosses:0, diceWinnings:0, totalWinnings:0,
+          bjHandsPlayed:0, bjWins:0, bjLosses:0, bjPushes:0
+        });
+      }
+    });
+    // Live listener for own data
+    db.ref(`planhub_casino/players/${me.id}`).on('value', s => {
+      myData = s.val() || {};
+      refreshDiceUI();
+      refreshBJUI();
+    });
+  }
+
+  // Leaderboard listener
+  db.ref('planhub_casino/players').on('value', s => {
+    allPlayers = s.val() || {};
+    renderLeaderboards();
+  });
+
+  // Settings listener
+  db.ref('planhub_casino/settings').on('value', s => {
+    settings = s.val() || {};
+    document.getElementById('contest-label').textContent = settings.contestLabel || 'PlanHub Casino';
+    syncAdminUI();
+  });
+
+  // Last sync display
+  db.ref('planhub_casino/lastSync').on('value', s => {
+    const v = s.val();
+    if (v) {
+      const d = new Date(v);
+      document.getElementById('sync-note').textContent = `Last sync: ${d.toLocaleTimeString()}`;
+    }
+  });
+
+  // Populate admin grant select
+  populateGrantSelect();
+
+  // Init BJ buttons to idle state
+  bjIdleButtons();
+}
+
+// ═══════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════
+function switchTab(tab) {
+  if (tab === 'blackjack') {
+    if (!settings.bjEnabled && settings.bjEnabled !== undefined) {
+      toast('Blackjack is paused by the admin.'); return;
+    }
+    if ((myData.diceWinnings || 0) <= 0) {
+      toast('Win at the dice table first to unlock blackjack!'); return;
+    }
+  }
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+// ═══════════════════════════════════════════════
+// DICE GAME
+// ═══════════════════════════════════════════════
+const FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+let diceRunning = false;
+
+function refreshDiceUI() {
+  const d = myData;
+  document.getElementById('dice-greeting').textContent = `Hey, ${me.name}! 🎲`;
+  document.getElementById('rolls-count').textContent   = d.rollsAvailable || 0;
+  document.getElementById('st-wins').textContent       = d.diceWins || 0;
+  document.getElementById('st-losses').textContent     = d.diceLosses || 0;
+  document.getElementById('st-winnings').textContent   = '$' + (d.totalWinnings || 0);
+
+  const btn = document.getElementById('roll-btn');
+  if ((d.rollsAvailable || 0) <= 0) {
+    btn.disabled = true;
+    btn.textContent = '🎲 No Rolls Available';
+  } else {
+    btn.disabled = false;
+    btn.textContent = '🎲 ROLL THE DICE';
+  }
+
+  // BJ tab indicator
+  if ((d.diceWinnings || 0) > 0) {
+    document.getElementById('bj-lock-icon').textContent = '🃏';
+  } else {
+    document.getElementById('bj-lock-icon').textContent = '🔒';
+  }
+}
+
+async function startRoll(multiplier = 1) {
+  if (diceRunning) return;
+  if ((myData.rollsAvailable || 0) <= 0) { toast('No rolls available!'); return; }
+
+  diceRunning = true;
+  document.getElementById('roll-btn').disabled = true;
+  document.getElementById('dice-result').innerHTML = '';
+  document.getElementById('dice-totals').style.display = 'none';
+
+  if (multiplier > 1) playSound('drumroll');
+
+  // Animate
+  ['pd1','pd2','cd1','cd2'].forEach(id => document.getElementById(id).classList.add('rolling'));
+  await sleep(1500);
+
+  const p1=rnd6(), p2=rnd6(), c1=rnd6(), c2=rnd6();
+  const pt=p1+p2, ct=c1+c2;
+
+  ['pd1','pd2','cd1','cd2'].forEach(id => document.getElementById(id).classList.remove('rolling'));
+  document.getElementById('pd1').textContent = FACES[p1-1];
+  document.getElementById('pd2').textContent = FACES[p2-1];
+  document.getElementById('cd1').textContent = FACES[c1-1];
+  document.getElementById('cd2').textContent = FACES[c2-1];
+
+  document.getElementById('dice-totals').style.display = 'flex';
+  document.getElementById('p-total').textContent = pt;
+  document.getElementById('c-total').textContent = ct;
+
+  if (pt > ct) {
+    await onDiceWin(multiplier);
+  } else if (pt < ct) {
+    await onDiceLoss();
+  } else {
+    // Tie — double or nothing
+    const next = Math.min(multiplier * 2, MAX_MULT);
+    document.getElementById('dice-result').innerHTML = `
+      <div class="result-tie">🤝 TIE — DOUBLE OR NOTHING!</div>
+      <div style="color:var(--gray);font-size:13px;margin-top:4px">
+        Next win = <span class="multiplier-badge">×${next}</span> prize
+      </div>`;
+    await sleep(1900);
+    diceRunning = false;
+    startRoll(next);
+    return;
+  }
+
+  diceRunning = false;
+  document.getElementById('roll-btn').disabled = (myData.rollsAvailable || 0) <= 0;
+}
+
+function calcPrize(mult) {
+  if (settings.surpriseMode && settings.surpriseModeMin != null && settings.surpriseModeMax != null) {
+    const lo = Number(settings.surpriseModeMin), hi = Number(settings.surpriseModeMax);
+    return Math.round(Math.random()*(hi-lo)+lo) * mult;
+  }
+  return (Number(settings.prizeAmount) || 0) * mult;
+}
+
+async function onDiceWin(mult) {
+  const prize = calcPrize(mult);
+  const res = document.getElementById('dice-result');
+  let html = `<div class="result-win">🎉 YOU WIN!</div>`;
+  if (mult > 1) html += `<div style="color:var(--gold);font-size:13px">×${mult} multiplier</div>`;
+  if (prize > 0) html += `<div class="prize-display">+$${prize}</div>`;
+  res.innerHTML = html;
+
+  playSound('cheers');
+  launchConfetti();
+
+  const pid = me.id;
+  const upd = {};
+  upd[`planhub_casino/players/${pid}/rollsAvailable`]  = firebase.database.ServerValue.increment(-1);
+  upd[`planhub_casino/players/${pid}/diceWins`]        = firebase.database.ServerValue.increment(1);
+  upd[`planhub_casino/players/${pid}/diceWinnings`]    = firebase.database.ServerValue.increment(prize);
+  upd[`planhub_casino/players/${pid}/totalWinnings`]   = firebase.database.ServerValue.increment(prize);
+  await db.ref().update(upd);
+  db.ref(`planhub_casino/players/${pid}/diceLog`).push({ ts:Date.now(), won:true, prize, mult });
+}
+
+async function onDiceLoss() {
+  document.getElementById('dice-result').innerHTML = `<div class="result-lose">😔 YOU LOSE</div>`;
+  playSound('sigh');
+  await sleep(650);
+  playSound('womp');
+
+  const pid = me.id;
+  const upd = {};
+  upd[`planhub_casino/players/${pid}/rollsAvailable`] = firebase.database.ServerValue.increment(-1);
+  upd[`planhub_casino/players/${pid}/diceLosses`]     = firebase.database.ServerValue.increment(1);
+  await db.ref().update(upd);
+  db.ref(`planhub_casino/players/${pid}/diceLog`).push({ ts:Date.now(), won:false, prize:0, mult:1 });
+}
+
+// ═══════════════════════════════════════════════
+// LEADERBOARD
+// ═══════════════════════════════════════════════
+function renderLeaderboards() {
+  const rows = Object.entries(allPlayers)
+    .filter(([,p]) => p && p.name)
+    .map(([,p]) => p)
+    .sort((a,b) => (b.totalWinnings||0) - (a.totalWinnings||0));
+
+  const html = rows.map((p,i) => {
+    const isMe     = me && p.email === me.email;
+    const isLeader = i === 0;
+    const w        = p.totalWinnings || 0;
+    return `<div class="lb-row ${isMe?'me':''} ${isLeader?'leader':''}">
+      <div class="lb-rank">${isLeader ? '👑' : i+1}</div>
+      <div style="flex:1">
+        <div class="lb-name">${p.name}${isMe?' <span style="color:var(--gold)">(you)</span>':''}</div>
+        <div class="lb-meta">${p.role||''} · W:${p.diceWins||0} L:${p.diceLosses||0}</div>
+      </div>
+      <div class="lb-amount ${w===0?'zero':''}" >$${w}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('lb-dice').innerHTML = html;
+  document.getElementById('lb-bj').innerHTML   = html;
+}
+
+// ═══════════════════════════════════════════════
+// BLACKJACK ENGINE
+// ═══════════════════════════════════════════════
+function refreshBJUI() {
+  const bankroll = myData.totalWinnings || 0;
+  const hasWon   = (myData.diceWinnings || 0) > 0;
+  const bjOn     = settings.bjEnabled !== false;
+
+  document.getElementById('bj-bankroll-val').textContent = '$' + bankroll;
+  document.getElementById('bj-st-wins').textContent      = myData.bjWins   || 0;
+  document.getElementById('bj-st-losses').textContent    = myData.bjLosses || 0;
+  document.getElementById('bj-st-pushes').textContent    = myData.bjPushes || 0;
+
+  const locked   = document.getElementById('bj-locked');
+  const unlocked = document.getElementById('bj-unlocked');
+
+  if (hasWon && bjOn) {
+    locked.style.display   = 'none';
+    unlocked.style.display = 'flex';
+    const sl = document.getElementById('wager-slider');
+    const ip = document.getElementById('wager-input');
+    sl.max = Math.max(1, bankroll);
+    ip.max = Math.max(1, bankroll);
+    if (bj.wager > bankroll) {
+      bj.wager = Math.max(1, bankroll);
+      sl.value = ip.value = bj.wager;
+    }
+  } else {
+    locked.style.display   = 'flex';
+    unlocked.style.display = 'none';
+    const h3 = locked.querySelector('h3');
+    const p  = locked.querySelector('p');
+    if (!bjOn) {
+      h3.textContent = 'Blackjack Temporarily Paused';
+      p.textContent  = 'The admin has paused the blackjack table.';
+    } else {
+      h3.textContent = 'Blackjack Table Locked';
+      p.textContent  = 'Win at the dice table first to unlock your seat.';
+    }
+  }
+}
+
+// ─── Deck helpers ───────────────────────────
+function makeDeck() {
+  const s=['♠','♥','♦','♣'], r=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+  return s.flatMap(suit => r.map(rank => ({ rank, suit })));
+}
+function shuffle(d) {
+  for (let i=d.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [d[i],d[j]]=[d[j],d[i]]; }
+  return d;
+}
+function draw() { return bj.deck.pop(); }
+
+function handVal(cards) {
+  let tot=0, aces=0;
+  for (const c of cards) {
+    if (c.rank==='A') { aces++; tot+=11; }
+    else if (['J','Q','K'].includes(c.rank)) tot+=10;
+    else tot+=parseInt(c.rank);
+  }
+  while (tot>21 && aces>0) { tot-=10; aces--; }
+  return tot;
+}
+function isNatBJ(cards) { return cards.length===2 && handVal(cards)===21; }
+function isSoft(cards) {
+  // hand contains an ace still counting as 11
+  let tot=0,aces=0;
+  for (const c of cards) {
+    if (c.rank==='A'){aces++;tot+=11;}
+    else if(['J','Q','K'].includes(c.rank))tot+=10;
+    else tot+=parseInt(c.rank);
+  }
+  return aces>0 && tot<=21;
+}
+
+// ─── Card rendering ──────────────────────────
+function cardHTML(c) {
+  if (c.down) return `<div class="card facedown"></div>`;
+  const red = c.suit==='♥'||c.suit==='♦';
+  return `<div class="card ${red?'red':'black'}">${c.rank}<div class="card-suit">${c.suit}</div></div>`;
+}
+function renderDealer(revealAll=false) {
+  const cards = bj.dealerCards.map((c,i)=> i===1&&!revealAll ? {...c,down:true} : {...c,down:false});
+  document.getElementById('dealer-cards').innerHTML = cards.map(cardHTML).join('');
+  const visible = revealAll ? bj.dealerCards : [bj.dealerCards[0]];
+  const tot = handVal(visible);
+  const lbl = document.getElementById('dealer-total-lbl');
+  lbl.textContent = revealAll
+    ? `(${tot}${tot>21?' — BUST':''})`
+    : `(${tot})`;
+  lbl.className = `hand-total-txt${revealAll&&tot>21?' bust':''}`;
+}
+function renderPlayer() {
+  if (bj.playerHands.length===1) {
+    const hand=bj.playerHands[0], tot=handVal(hand);
+    document.getElementById('player-hands-wrap').innerHTML =
+      `<div class="card-row">${hand.map(cardHTML).join('')}</div>`;
+    const lbl = document.getElementById('player-total-lbl');
+    lbl.textContent = `(${tot}${tot>21?' — BUST':isNatBJ(hand)?' — BLACKJACK!':''})`;
+    lbl.className   = `hand-total-txt${tot>21?' bust':isNatBJ(hand)?' bj':''}`;
+  } else {
+    document.getElementById('player-hands-wrap').innerHTML =
+      bj.playerHands.map((hand,i)=>{
+        const tot=handVal(hand);
+        const active= i===bj.activeIdx && bj.phase==='player';
+        return `<div class="split-hand ${active?'active-hand':''}">
+          <div class="zone-label">Hand ${i+1} (${tot}${tot>21?' — BUST':''})</div>
+          <div class="card-row">${hand.map(cardHTML).join('')}</div>
+        </div>`;
+      }).join('');
+  }
+}
+
+// ─── Button state machine ────────────────────
+function bjIdleButtons() {
+  show('btn-deal',true); show('btn-newhand',false);
+  show('btn-hit',false); show('btn-stand',false);
+  show('btn-double',false); show('btn-split',false);
+  en('btn-deal',true);
+}
+function bjPlayerButtons() {
+  const hand=bj.playerHands[bj.activeIdx]||[];
+  const first2= hand.length===2;
+  const canSplit= first2 && hand[0].rank===hand[1].rank && bj.playerHands.length===1;
+  const bankroll= myData.totalWinnings||0;
+
+  show('btn-deal',false); show('btn-newhand',false);
+  show('btn-hit',true);  en('btn-hit',true);
+  show('btn-stand',true);en('btn-stand',true);
+  show('btn-double',true);en('btn-double', first2 && bankroll>=bj.wager);
+  show('btn-split', canSplit); en('btn-split',canSplit);
+}
+function bjDoneButtons() {
+  show('btn-deal',false); show('btn-newhand',true);
+  show('btn-hit',false);  show('btn-stand',false);
+  show('btn-double',false); show('btn-split',false);
+}
+
+function show(id,v) { document.getElementById(id).style.display = v?'inline-block':'none'; }
+function en(id,v)   { document.getElementById(id).disabled = !v; }
+
+// ─── Deal ─────────────────────────────────────
+function dealHand() {
+  const bankroll = myData.totalWinnings||0;
+  if (bankroll<=0){ toast('No bankroll — win some dice rolls first!'); return; }
+  const wager = parseInt(document.getElementById('wager-input').value)||0;
+  if (wager<1)         { toast('Set a wager.'); return; }
+  if (wager>bankroll)  { toast('Wager exceeds your bankroll.'); return; }
+
+  bj.deck         = shuffle(makeDeck());
+  bj.wager        = wager;
+  bj.splitWagers  = [wager];
+  bj.playerHands  = [[draw(), draw()]];
+  bj.dealerCards  = [draw(), {down:true, ...draw()}];
+  bj.activeIdx    = 0;
+  bj.phase        = 'player';
+
+  document.getElementById('bj-result').innerHTML = '';
+  document.getElementById('bj-wager-section').style.display = 'none';
+
+  renderDealer(false);
+  renderPlayer();
+  bjPlayerButtons();
+
+  // Check for player natural BJ
+  if (isNatBJ(bj.playerHands[0])) {
+    bj.dealerCards[1].down = false;
+    renderDealer(true);
+    if (isNatBJ(bj.dealerCards)) {
+      finishBJ('push', 0);
+    } else {
+      finishBJ('bj', Math.floor(wager*1.5));
+    }
+  }
+}
+
+// ─── Hit ──────────────────────────────────────
+function playerHit() {
+  const hand = bj.playerHands[bj.activeIdx];
+  hand.push(draw());
+  renderPlayer();
+  const tot = handVal(hand);
+  if (tot>=21) advanceOrDealer();
+}
+function playerStand() { advanceOrDealer(); }
+
+function advanceOrDealer() {
+  if (bj.playerHands.length>1 && bj.activeIdx<bj.playerHands.length-1) {
+    bj.activeIdx++;
+    renderPlayer();
+    bjPlayerButtons();
+  } else {
+    runDealer();
+  }
+}
+
+// ─── Double Down ──────────────────────────────
+function playerDouble() {
+  const bankroll = myData.totalWinnings||0;
+  const extra    = Math.min(bj.wager, bankroll - bj.wager);
+  bj.splitWagers[bj.activeIdx] += extra;
+  bj.wager = bj.splitWagers[bj.activeIdx];
+  bj.playerHands[bj.activeIdx].push(draw());
+  renderPlayer();
+  advanceOrDealer();
+}
+
+// ─── Split ────────────────────────────────────
+function playerSplit() {
+  const h = bj.playerHands[0];
+  bj.playerHands = [[h[0], draw()], [h[1], draw()]];
+  bj.splitWagers = [bj.wager, bj.wager];
+  bj.activeIdx   = 0;
+  renderPlayer();
+  bjPlayerButtons();
+}
+
+// ─── Dealer play ──────────────────────────────
+async function runDealer() {
+  bj.phase = 'dealer';
+  bjDoneButtons(); // hide player buttons immediately
+
+  // Reveal hole card
+  bj.dealerCards[1].down = false;
+  renderDealer(true);
+  playSound('drumroll');
+  await sleep(850);
+
+  // Draw to ≥17 (hit soft 17)
+  while (true) {
+    const tot = handVal(bj.dealerCards);
+    if (tot>17) break;
+    if (tot===17 && !isSoft(bj.dealerCards)) break;
+    await sleep(650);
+    bj.dealerCards.push(draw());
+    renderDealer(true);
+  }
+  await sleep(400);
+
+  const dTot    = handVal(bj.dealerCards);
+  const dBust   = dTot>21;
+  let netChange = 0;
+
+  for (let i=0; i<bj.playerHands.length; i++) {
+    const pTot  = handVal(bj.playerHands[i]);
+    const wager = bj.splitWagers[i]||bj.wager;
+    if      (pTot>21)              netChange -= wager;
+    else if (dBust||pTot>dTot)    netChange += wager;
+    else if (pTot<dTot)            netChange -= wager;
+    // else push — no change
+  }
+
+  if      (netChange>0) await finishBJ('win', netChange);
+  else if (netChange<0) await finishBJ('lose', Math.abs(netChange));
+  else                  await finishBJ('push', 0);
+}
+
+// ─── Settle ───────────────────────────────────
+async function finishBJ(outcome, amount) {
+  bj.phase = 'done';
+  bjDoneButtons();
+  document.getElementById('bj-wager-section').style.display = 'block';
+
+  const res = document.getElementById('bj-result');
+  const pid = me.id;
+  const upd = {};
+  upd[`planhub_casino/players/${pid}/bjHandsPlayed`] = firebase.database.ServerValue.increment(1);
+
+  if (outcome==='bj') {
+    res.innerHTML = `<div class="bj-rtxt bj-bjtxt">🃏 BLACKJACK! +$${amount}</div>`;
+    playSound('cheers'); launchConfetti();
+    upd[`planhub_casino/players/${pid}/bjWins`]        = firebase.database.ServerValue.increment(1);
+    upd[`planhub_casino/players/${pid}/totalWinnings`] = firebase.database.ServerValue.increment(amount);
+  } else if (outcome==='win') {
+    res.innerHTML = `<div class="bj-rtxt bj-win">✅ WIN! +$${amount}</div>`;
+    playSound('cheers'); launchConfetti();
+    upd[`planhub_casino/players/${pid}/bjWins`]        = firebase.database.ServerValue.increment(1);
+    upd[`planhub_casino/players/${pid}/totalWinnings`] = firebase.database.ServerValue.increment(amount);
+  } else if (outcome==='lose') {
+    res.innerHTML = `<div class="bj-rtxt bj-lose">❌ LOST -$${amount}</div>`;
+    playSound('sigh');
+    await sleep(650);
+    playSound('womp');
+    upd[`planhub_casino/players/${pid}/bjLosses`]      = firebase.database.ServerValue.increment(1);
+    upd[`planhub_casino/players/${pid}/totalWinnings`] = firebase.database.ServerValue.increment(-amount);
+  } else {
+    res.innerHTML = `<div class="bj-rtxt bj-push">↔️ PUSH — Wager Returned</div>`;
+    upd[`planhub_casino/players/${pid}/bjPushes`] = firebase.database.ServerValue.increment(1);
+  }
+
+  await db.ref().update(upd);
+  db.ref(`planhub_casino/players/${pid}/bjLog`).push({
+    ts:Date.now(), wager:bj.wager, outcome,
+    net: outcome==='win'||outcome==='bj' ? amount : outcome==='lose' ? -amount : 0
+  });
+}
+
+function newHand() {
+  bj.phase='idle'; bj.playerHands=[]; bj.dealerCards=[]; bj.activeIdx=0;
+  document.getElementById('dealer-cards').innerHTML='';
+  document.getElementById('player-hands-wrap').innerHTML='<div class="card-row"></div>';
+  document.getElementById('dealer-total-lbl').textContent='';
+  document.getElementById('player-total-lbl').textContent='';
+  document.getElementById('bj-result').innerHTML='';
+  document.getElementById('bj-wager-section').style.display='block';
+  bjIdleButtons();
+}
+
+function syncWager(src) {
+  const sl=document.getElementById('wager-slider'), ip=document.getElementById('wager-input');
+  const bankroll = myData.totalWinnings||1;
+  if (src==='slider') {
+    ip.value = sl.value;
+  } else {
+    let v=parseInt(ip.value)||1;
+    v=Math.max(1,Math.min(v,bankroll));
+    sl.value=ip.value=v;
+  }
+  bj.wager = parseInt(ip.value)||1;
+}
+
+// ═══════════════════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════════════════
+function checkPw() {
+  const input  = document.getElementById('admin-pw').value;
+  const stored = settings.adminPassword || 'casino2026';
+  if (input===stored) {
+    adminAuthed=true;
+    document.getElementById('admin-auth-wrap').style.display='none';
+    document.getElementById('admin-panel').style.display='block';
+  } else {
+    const err = document.getElementById('pw-err');
+    err.textContent='Incorrect password.';
+    setTimeout(()=>err.textContent='',2200);
+  }
+}
+
+function syncAdminUI() {
+  if (!adminAuthed) return;
+  const s=settings;
+  setVal('adm-prize', s.prizeAmount||'');
+  setVal('adm-label', s.contestLabel||'');
+
+  tog('surp-toggle', s.surpriseMode);
+  document.getElementById('surp-lbl').textContent   = 'Surprise Mode: '+(s.surpriseMode?'ON':'OFF');
+  document.getElementById('surp-range').style.display = s.surpriseMode ? 'block':'none';
+  if (s.surpriseMode) {
+    setVal('adm-smin', s.surpriseModeMin||'');
+    setVal('adm-smax', s.surpriseModeMax||'');
+  }
+
+  tog('bj-toggle', s.bjEnabled!==false);
+  document.getElementById('bj-toggle-lbl').textContent = 'Blackjack: '+(s.bjEnabled!==false?'ENABLED':'DISABLED');
+}
+
+function savePrize() {
+  db.ref('planhub_casino/settings').update({
+    prizeAmount: Number(document.getElementById('adm-prize').value)||null,
+    contestLabel: document.getElementById('adm-label').value||'PlanHub Casino'
+  });
+  admMsg('Saved.');
+}
+function toggleSurprise() {
+  db.ref('planhub_casino/settings/surpriseMode').set(!settings.surpriseMode);
+}
+function saveSurprise() {
+  const lo=Number(document.getElementById('adm-smin').value), hi=Number(document.getElementById('adm-smax').value);
+  if (hi<=lo){ admMsg('Max must be > min.',true); return; }
+  db.ref('planhub_casino/settings').update({ surpriseModeMin:lo, surpriseModeMax:hi });
+  admMsg('Surprise range saved.');
+}
+function toggleBJ() {
+  db.ref('planhub_casino/settings/bjEnabled').set(settings.bjEnabled===false?true:false);
+}
+function grantRolls() {
+  const sel=document.getElementById('grant-sel'), n=parseInt(document.getElementById('grant-n').value)||1;
+  const pid=sel.value;
+  if (!pid){ admMsg('Select a player.',true); return; }
+  db.ref(`planhub_casino/players/${pid}/rollsAvailable`).transaction(v=>(v||0)+n);
+  db.ref(`planhub_casino/players/${pid}/rollsEarned`).transaction(v=>(v||0)+n);
+  admMsg(`Granted ${n} roll(s) to ${sel.options[sel.selectedIndex].text}`);
+}
+function resetGame() {
+  if (!confirm('Reset ALL player data? Cannot be undone.')) return;
+  db.ref('planhub_casino/players').once('value').then(s=>{
+    const pids=Object.keys(s.val()||{});
+    const upd={};
+    const zero={rollsAvailable:0,rollsEarned:0,diceWins:0,diceLosses:0,diceWinnings:0,totalWinnings:0,bjHandsPlayed:0,bjWins:0,bjLosses:0,bjPushes:0,diceLog:null,bjLog:null};
+    pids.forEach(pid=>Object.entries(zero).forEach(([k,v])=>{ upd[`planhub_casino/players/${pid}/${k}`]=v; }));
+    upd['planhub_casino/rollSyncHWM']=null;
+    db.ref().update(upd);
+    admMsg('Game reset.');
+  });
+}
+function changePassword() {
+  const pw=document.getElementById('new-pw').value;
+  if (!pw||pw.length<4){ admMsg('Min 4 characters.',true); return; }
+  db.ref('planhub_casino/settings/adminPassword').set(pw);
+  document.getElementById('new-pw').value='';
+  admMsg('Password updated.');
+}
+function populateGrantSelect() {
+  const opts=Object.values(ROSTER)
+    .filter(p=>p.role==='AE'||p.role==='SDR')
+    .sort((a,b)=>a.name.localeCompare(b.name))
+    .map(p=>`<option value="${p.id}">${p.name} (${p.role})</option>`).join('');
+  document.getElementById('grant-sel').innerHTML=opts;
+}
+function admMsg(txt,err=false){
+  const el=document.getElementById('adm-msg');
+  el.textContent=txt; el.style.color=err?'var(--red)':'var(--green)';
+  setTimeout(()=>el.textContent='',3000);
+}
+
+// ═══════════════════════════════════════════════
+// CONFETTI
+// ═══════════════════════════════════════════════
+let confettiFrame;
+function launchConfetti() {
+  const cv=document.getElementById('confetti-canvas');
+  const ctx=cv.getContext('2d');
+  cv.width=window.innerWidth; cv.height=window.innerHeight;
+  const COLORS=['#f1c40f','#2ecc71','#3498db','#e74c3c','#9b59b6','#e67e22','#fff'];
+  const pts=Array.from({length:130},()=>({
+    x:Math.random()*cv.width, y:Math.random()*-cv.height*1.2,
+    w:Math.random()*10+5, h:Math.random()*5+3,
+    color:COLORS[Math.floor(Math.random()*COLORS.length)],
+    r:Math.random()*Math.PI*2, rot:(Math.random()-.5)*.3,
+    vx:(Math.random()-.5)*3, vy:Math.random()*4+2.5,
+  }));
+  let t=0;
+  if (confettiFrame) cancelAnimationFrame(confettiFrame);
+  function draw(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    t++;
+    let alive=false;
+    pts.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy; p.r+=p.rot;
+      if(p.y<cv.height+20) alive=true;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r);
+      ctx.fillStyle=p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    });
+    if(alive&&t<350) confettiFrame=requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,cv.width,cv.height);
+  }
+  draw();
+}
+
+// ═══════════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════════
+function playSound(name) {
+  const map={cheers:'aud-cheers',sigh:'aud-sigh',womp:'aud-womp',drumroll:'aud-drumroll'};
+  const el=document.getElementById(map[name]);
+  if(el){ el.currentTime=0; el.play().catch(()=>{}); }
+}
+
+// ═══════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+const rnd6  = ()  => Math.floor(Math.random()*6)+1;
+
+function toast(msg) {
+  const el=document.createElement('div');
+  el.className='toast'; el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+function setVal(id,v) { const el=document.getElementById(id); if(el) el.value=v; }
+function tog(id,on) {
+  const el=document.getElementById(id);
+  if(!el) return;
+  on ? el.classList.add('on') : el.classList.remove('on');
+}
+</script>
+</body>
+</html>
