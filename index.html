@@ -12,17 +12,17 @@
 
   <style>
     :root {
-      --bg:    #0c1a0c;
-      --bg2:   #152316;
-      --felt:  #1a4a1a;
-      --felt2: #1f5c1f;
-      --gold:  #f1c40f;
-      --gold2: #c9a700;
+      --bg:    #0b1929;
+      --bg2:   #112240;
+      --felt:  #0e3460;
+      --felt2: #1a4a8a;
+      --gold:  #ff6600;
+      --gold2: #e05500;
       --green: #2ecc71;
       --red:   #e74c3c;
-      --blue:  #3498db;
-      --gray:  #888;
-      --white: #f0f0f0;
+      --blue:  #0066cc;
+      --gray:  #8899aa;
+      --white: #f0f4ff;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -70,14 +70,32 @@
     #app { display: none; flex-direction: column; min-height: 100vh; }
 
     header {
-      background: linear-gradient(135deg,#091409,#163016);
+      background: linear-gradient(135deg,#071525,#0d2340);
       border-bottom: 3px solid var(--gold);
       padding: 14px 24px;
       display: flex; align-items: center; justify-content: space-between;
     }
+    .header-logo {
+      display: flex; align-items: center; gap: 14px;
+    }
+    .ph-logo-mark {
+      width: 38px; height: 38px;
+      background: var(--gold); border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 900; color: #fff;
+      font-style: italic; letter-spacing: -1px;
+      box-shadow: 0 0 14px rgba(255,102,0,.5);
+    }
     .header-title {
-      font-size: 26px; font-weight: 800; color: var(--gold);
-      text-shadow: 0 0 18px rgba(241,196,15,.5); letter-spacing: 2px;
+      font-size: 24px; font-weight: 800; color: var(--white);
+      letter-spacing: 1px; line-height: 1;
+    }
+    .header-title span {
+      color: var(--gold);
+    }
+    .header-subtitle {
+      font-size: 11px; color: var(--gray); letter-spacing: 2px;
+      text-transform: uppercase; margin-top: 2px;
     }
     .header-right { display: flex; align-items: center; gap: 16px; }
     .live-dot {
@@ -147,11 +165,11 @@
     }
     .dice-pair { display: flex; gap: 8px; justify-content: center; }
     .die {
-      width: 62px; height: 62px; background: #fff;
-      border-radius: 11px; border: 2px solid #ccc;
+      width: 96px; height: 96px; background: #fff;
+      border-radius: 16px; border: 3px solid #ccc;
       display: flex; align-items: center; justify-content: center;
-      font-size: 30px; color: #222;
-      box-shadow: 3px 3px 8px rgba(0,0,0,.5);
+      font-size: 52px; color: #222;
+      box-shadow: 4px 4px 14px rgba(0,0,0,.6);
     }
     .die.rolling { animation: dieRoll .12s infinite; }
     @keyframes dieRoll {
@@ -170,12 +188,12 @@
 
     .btn-roll {
       background: linear-gradient(135deg, var(--gold), var(--gold2));
-      color: #000; border: none; padding: 15px 44px;
+      color: #fff; border: none; padding: 15px 44px;
       font-size: 19px; font-weight: 800; border-radius: 12px;
       cursor: pointer; letter-spacing: 1px; text-transform: uppercase;
-      box-shadow: 0 4px 16px rgba(241,196,15,.4); transition: all .15s;
+      box-shadow: 0 4px 16px rgba(255,102,0,.4); transition: all .15s;
     }
-    .btn-roll:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(241,196,15,.6); }
+    .btn-roll:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(255,102,0,.6); }
     .btn-roll:disabled { opacity: .5; cursor: not-allowed; }
 
     .result-banner {
@@ -199,7 +217,7 @@
     }
 
     .dice-stats { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
-    .stat-chip { background: var(--bg2); border: 1px solid #2a3a2a; border-radius: 10px; padding: 12px 18px; text-align: center; }
+    .stat-chip { background: var(--bg2); border: 1px solid #1e3a5f; border-radius: 10px; padding: 12px 18px; text-align: center; }
     .stat-chip .sv { font-size: 26px; font-weight: 800; color: var(--gold); }
     .stat-chip .sl { font-size: 11px; color: var(--gray); text-transform: uppercase; margin-top: 2px; }
 
@@ -338,7 +356,7 @@
     .admin-auth-wrap { max-width: 380px; margin: 40px auto; text-align: center; }
     .admin-auth-wrap h2 { color: var(--gold); margin-bottom: 12px; }
     .admin-auth-wrap p  { color: var(--gray); font-size: 14px; margin-bottom: 20px; }
-    .asec { background: var(--bg2); border: 1px solid #2a3a2a; border-radius: 12px; padding: 20px; margin-bottom: 14px; }
+    .asec { background: var(--bg2); border: 1px solid #1e3a5f; border-radius: 12px; padding: 20px; margin-bottom: 14px; }
     .asec h3 { font-size: 13px; text-transform: uppercase; color: var(--gray); letter-spacing: 1px; margin-bottom: 14px; }
     .afg { display: flex; flex-direction: column; gap: 5px; margin-bottom: 12px; }
     .afg label { font-size: 13px; }
@@ -392,8 +410,13 @@
 <!-- ═══════════════ AUTH ═══════════════ -->
 <div id="auth-screen">
   <div class="auth-card">
-    <div class="auth-logo">🎰</div>
-    <div class="auth-title">PlanHub Casino</div>
+    <div class="auth-logo">
+      <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:4px">
+        <div style="background:var(--gold);border-radius:10px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;font-style:italic">PH</div>
+      </div>
+      <div style="font-size:40px">🎰</div>
+    </div>
+    <div class="auth-title"><span style="color:var(--gold)">PlanHub</span> Casino</div>
     <div class="auth-sub">Sign in with your PlanHub Google account to play</div>
     <button class="btn-google" onclick="signIn()">
       <svg width="20" height="20" viewBox="0 0 48 48">
@@ -411,7 +434,13 @@
 <!-- ═══════════════ APP ═══════════════ -->
 <div id="app">
   <header>
-    <div class="header-title">🎰 PlanHub Casino</div>
+    <div class="header-logo">
+      <div class="ph-logo-mark">PH</div>
+      <div>
+        <div class="header-title"><span>PlanHub</span> Casino</div>
+        <div class="header-subtitle">🎰 Sales Contest</div>
+      </div>
+    </div>
     <div class="header-right">
       <div>
         <span class="live-dot"></span>
@@ -660,39 +689,38 @@ const db   = firebase.database();
 // ROSTER  (email → player meta)
 // ═══════════════════════════════════════════════
 const ROSTER = {
-  // AEs
-  "mike.fecca@planhub.com":        { name:"Mike Fecca",        id:"629527681",    role:"AE"    },
-  "jason.glass@planhub.com":       { name:"Jason Glass",       id:"1792198284",   role:"AE"    },
-  "steven.tribble@planhub.com":    { name:"Steven Tribble",    id:"49902523",     role:"AE"    },
-  "kristin.dolan@planhub.com":     { name:"Kristin Dolan",     id:"1391657011",   role:"AE"    },
-  "benjamin.sager@planhub.com":    { name:"Ben Sager",         id:"77683167",     role:"AE"    },
-  "kelly.drew@planhub.com":        { name:"Kelly Drew",        id:"672261556",    role:"AE"    },
-  "chris.gomez@planhub.com":       { name:"Chris Gomez",       id:"308948531",    role:"AE"    },
-  "bob.bates@planhub.com":         { name:"Bob Bates",         id:"2123553241",   role:"AE"    },
-  "jean.davis@planhub.com":        { name:"Jean Davis",        id:"303944088",    role:"AE"    },
-  "connor.gardner@planhub.com":    { name:"Connor Gardner",    id:"76001722",     role:"AE"    },
-  "anthony.ventresca@planhub.com": { name:"Anthony Ventresca", id:"86821313",     role:"AE"    },
-  "cherish.johnson@planhub.com":   { name:"Cherish Johnson",   id:"77683120",     role:"AE"    },
-  "ken.chesnut@planhub.com":       { name:"Ken Chesnut",       id:"562318206",    role:"AE"    },
-  "frank.colon@planhub.com":       { name:"Frank Colon",       id:"1319491554",   role:"AE"    },
-  "julie.prinssen@planhub.com":    { name:"Julie Prinssen",    id:"51523309",     role:"AE"    },
-  "john.morgan@planhub.com":       { name:"John Morgan",       id:"86821314",     role:"AE"    },
-  "wendy.best@planhub.com":        { name:"Wendy Best",        id:"43905775",     role:"AE"    },
-  "mark.fine@planhub.com":         { name:"Mark Fine",         id:"444356199",    role:"AE"    },
-  // SDRs (SC + SP; Upsell excluded from contest)
-  "marcus.woods@planhub.com":      { name:"Marcus Woods",      id:"689021749",    role:"SDR"   },
-  "ryan.wolfman@planhub.com":      { name:"Ryan Wolfman",      id:"1876970213",   role:"SDR"   },
-  "kyle.volp@planhub.com":         { name:"Kyle Volp",         id:"80077717",     role:"SDR"   },
-  "izzy.alvarez@planhub.com":      { name:"Izzy Alvarez",      id:"81910750",     role:"SDR"   },
-  "james.bartley@planhub.com":     { name:"James Bartley",     id:"1280205714",   role:"SDR"   },
-  "kevin.songco@planhub.com":      { name:"Kevin Songco",      id:"80172587",     role:"SDR"   },
-  "nicole.williams@planhub.com":   { name:"Nicole Williams",   id:"1283636153",   role:"SDR"   },
-  "nathan.bauscher@planhub.com":   { name:"Nathan Bauscher",   id:"688732035",    role:"SDR"   },
-  // Admin-only (can access admin panel but not players on leaderboard)
-  "josh.rank@planhub.com":         { name:"Josh Rank",         id:"826736575",    role:"Admin" },
-  "jrank@planhub.com":             { name:"Josh Rank",         id:"826736575",    role:"Admin" },
-  "john.maurer@planhub.com":       { name:"John Maurer",       id:"43905666",     role:"Admin" },
-  "nick.cappello@planhub.com":     { name:"Nick Cappello",     id:"86626888",     role:"Admin" },
+  // AEs (first-initial + last-name format)
+  "mfecca@planhub.com":        { name:"Mike Fecca",        id:"629527681",    role:"AE"    },
+  "jglass@planhub.com":        { name:"Jason Glass",       id:"1792198284",   role:"AE"    },
+  "stribble@planhub.com":      { name:"Steven Tribble",    id:"49902523",     role:"AE"    },
+  "kdolan@planhub.com":        { name:"Kristin Dolan",     id:"1391657011",   role:"AE"    },
+  "bsager@planhub.com":        { name:"Ben Sager",         id:"77683167",     role:"AE"    },
+  "kdrew@planhub.com":         { name:"Kelly Drew",        id:"672261556",    role:"AE"    },
+  "cgomez@planhub.com":        { name:"Chris Gomez",       id:"308948531",    role:"AE"    },
+  "bbates@planhub.com":        { name:"Bob Bates",         id:"2123553241",   role:"AE"    },
+  "jdavis@planhub.com":        { name:"Jean Davis",        id:"303944088",    role:"AE"    },
+  "cgardner@planhub.com":      { name:"Connor Gardner",    id:"76001722",     role:"AE"    },
+  "aventresca@planhub.com":    { name:"Anthony Ventresca", id:"86821313",     role:"AE"    },
+  "cjohnson@planhub.com":      { name:"Cherish Johnson",   id:"77683120",     role:"AE"    },
+  "kchesnut@planhub.com":      { name:"Ken Chesnut",       id:"562318206",    role:"AE"    },
+  "fcolon@planhub.com":        { name:"Frank Colon",       id:"1319491554",   role:"AE"    },
+  "jprinssen@planhub.com":     { name:"Julie Prinssen",    id:"51523309",     role:"AE"    },
+  "jmorgan@planhub.com":       { name:"John Morgan",       id:"86821314",     role:"AE"    },
+  "wbest@planhub.com":         { name:"Wendy Best",        id:"43905775",     role:"AE"    },
+  "mfine@planhub.com":         { name:"Mark Fine",         id:"444356199",    role:"AE"    },
+  // SDRs — SC + SP (Upsell excluded from contest)
+  "mwoods@planhub.com":        { name:"Marcus Woods",      id:"689021749",    role:"SDR"   },
+  "rwolfman@planhub.com":      { name:"Ryan Wolfman",      id:"1876970213",   role:"SDR"   },
+  "kvolp@planhub.com":         { name:"Kyle Volp",         id:"80077717",     role:"SDR"   },
+  "ialvarez@planhub.com":      { name:"Izzy Alvarez",      id:"81910750",     role:"SDR"   },
+  "jbartley@planhub.com":      { name:"James Bartley",     id:"1280205714",   role:"SDR"   },
+  "ksongco@planhub.com":       { name:"Kevin Songco",      id:"80172587",     role:"SDR"   },
+  "nwilliams@planhub.com":     { name:"Nicole Williams",   id:"1283636153",   role:"SDR"   },
+  "nbauscher@planhub.com":     { name:"Nathan Bauscher",   id:"688732035",    role:"SDR"   },
+  // Leadership — can play (get rolls) but hidden from leaderboard
+  "jrank@planhub.com":         { name:"Josh Rank",         id:"826736575",    role:"Admin" },
+  "jmaurer@planhub.com":       { name:"John Maurer",       id:"43905666",     role:"Admin" },
+  "ncappello@planhub.com":     { name:"Nick Cappello",     id:"86626888",     role:"Admin" },
 };
 
 // ═══════════════════════════════════════════════
@@ -771,25 +799,23 @@ function initApp() {
     }
   });
 
-  // Bootstrap own player node
-  if (me.role !== 'Admin') {
-    db.ref(`planhub_casino/players/${me.id}`).once('value').then(s => {
-      if (!s.exists()) {
-        db.ref(`planhub_casino/players/${me.id}`).set({
-          name: me.name, email: me.email, role: me.role,
-          rollsAvailable:0, rollsEarned:0,
-          diceWins:0, diceLosses:0, diceWinnings:0, totalWinnings:0,
-          bjHandsPlayed:0, bjWins:0, bjLosses:0, bjPushes:0
-        });
-      }
-    });
-    // Live listener for own data
-    db.ref(`planhub_casino/players/${me.id}`).on('value', s => {
-      myData = s.val() || {};
-      refreshDiceUI();
-      refreshBJUI();
-    });
-  }
+  // Bootstrap own player node (all roles including Admin can play)
+  db.ref(`planhub_casino/players/${me.id}`).once('value').then(s => {
+    if (!s.exists()) {
+      db.ref(`planhub_casino/players/${me.id}`).set({
+        name: me.name, email: me.email, role: me.role,
+        rollsAvailable:0, rollsEarned:0,
+        diceWins:0, diceLosses:0, diceWinnings:0, totalWinnings:0,
+        bjHandsPlayed:0, bjWins:0, bjLosses:0, bjPushes:0
+      });
+    }
+  });
+  // Live listener for own data
+  db.ref(`planhub_casino/players/${me.id}`).on('value', s => {
+    myData = s.val() || {};
+    refreshDiceUI();
+    refreshBJUI();
+  });
 
   // Leaderboard listener
   db.ref('planhub_casino/players').on('value', s => {
@@ -967,7 +993,7 @@ async function onDiceLoss() {
 // ═══════════════════════════════════════════════
 function renderLeaderboards() {
   const rows = Object.entries(allPlayers)
-    .filter(([,p]) => p && p.name)
+    .filter(([,p]) => p && p.name && p.role !== 'Admin')
     .map(([,p]) => p)
     .sort((a,b) => (b.totalWinnings||0) - (a.totalWinnings||0));
 
