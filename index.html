@@ -513,7 +513,7 @@
         <span class="live-dot"></span>
         <span class="contest-label" id="contest-label">Loading…</span>
       </div>
-      <div id="header-sync" style="font-size:11px;color:var(--gray2)"></div>
+      <div id="header-sync" style="font-size:11px;color:var(--gray2)">Last sync: —</div>
       <span class="user-info" id="user-display"></span>
       <button class="btn-logout" onclick="signOut()">Sign Out</button>
     </div>
@@ -973,11 +973,21 @@ function initApp() {
   // Last sync display
   db.ref('planhub_casino/lastSync').on('value', s => {
     const v = s.val();
+    const el = document.getElementById('header-sync');
+    const note = document.getElementById('sync-note');
     if (v) {
       const d = new Date(v);
-      const txt = `Last sync: ${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
-      document.getElementById('sync-note').textContent   = txt;
-      document.getElementById('header-sync').textContent = txt;
+      const fmt = d.toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true
+      });
+      const txt = `Last sync: ${fmt} EST`;
+      el.textContent   = txt;
+      note.textContent = txt;
+    } else {
+      el.textContent   = 'Last sync: —';
+      note.textContent = 'Not yet synced';
     }
   });
 
