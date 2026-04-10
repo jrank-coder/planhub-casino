@@ -1097,10 +1097,11 @@ async function startRoll(multiplier = 1) {
   setDie('cd1',c1); setDie('cd2',c2);
   document.getElementById('c-total').textContent = ct;
 
-  // Show computer total briefly
+  // Show computer total, play drumroll to build anticipation before player rolls
   document.getElementById('dice-totals').style.display = 'flex';
   document.getElementById('p-total').textContent = '?';
   document.getElementById('dice-result').innerHTML = `<div style="color:var(--gray2);font-size:14px">Computer rolled <strong style="color:var(--yellow)">${ct}</strong> — your turn!</div>`;
+  playSound('drumroll');
   await sleep(900);
 
   // Step 2: Player dice roll
