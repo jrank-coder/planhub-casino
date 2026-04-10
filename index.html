@@ -513,6 +513,7 @@
         <span class="live-dot"></span>
         <span class="contest-label" id="contest-label">Loading…</span>
       </div>
+      <div id="header-sync" style="font-size:11px;color:var(--gray2)"></div>
       <span class="user-info" id="user-display"></span>
       <button class="btn-logout" onclick="signOut()">Sign Out</button>
     </div>
@@ -974,7 +975,9 @@ function initApp() {
     const v = s.val();
     if (v) {
       const d = new Date(v);
-      document.getElementById('sync-note').textContent = `Last sync: ${d.toLocaleTimeString()}`;
+      const txt = `Last sync: ${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
+      document.getElementById('sync-note').textContent   = txt;
+      document.getElementById('header-sync').textContent = txt;
     }
   });
 
