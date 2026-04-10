@@ -366,24 +366,48 @@
     .bj-stats { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
     /* ── LEADERBOARD ─────────────────────────── */
-    .leaderboard { width: 270px; flex-shrink: 0; }
+    .leaderboard { width: 310px; flex-shrink: 0; }
     .lb-header {
       font-size: 13px; font-weight: 700; color: var(--mint);
-      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;
     }
-    .lb-list { display: flex; flex-direction: column; gap: 5px; }
+    .lb-col-hdr {
+      display: flex; align-items: center; gap: 6px;
+      padding: 0 8px 6px; font-size: 15px;
+      border-bottom: 1px solid rgba(0,184,148,.2); margin-bottom: 6px;
+    }
+    .lb-col-hdr-name { flex: 1; }
+    .lb-col-hdr-game { width: 44px; text-align: right; }
+    .lb-col-hdr-ttl  { width: 50px; text-align: right; }
+    .lb-list { display: flex; flex-direction: column; gap: 4px; }
     .lb-row {
       background: var(--bg2); border-radius: 8px;
-      padding: 9px 13px; display: flex; align-items: center;
-      gap: 9px; border: 1px solid transparent; transition: border-color .2s;
+      padding: 7px 8px; display: flex; align-items: center;
+      gap: 6px; border: 1px solid transparent; transition: border-color .2s;
     }
-    .lb-row.me     { border-color: var(--gold); }
-    .lb-row.leader { border-color: var(--green); }
-    .lb-rank    { font-size: 12px; color: var(--gray); width: 20px; text-align: right; flex-shrink: 0; }
-    .lb-name    { flex: 1; font-size: 13px; font-weight: 600; }
-    .lb-meta    { font-size: 10px; color: var(--gray); margin-top: 1px; }
-    .lb-amount  { font-size: 14px; font-weight: 800; color: var(--mint); }
-    .lb-amount.zero { color: var(--gray2); }
+    .lb-row.me     { border-color: var(--mint); }
+    .lb-row.leader { border-color: var(--mint2); }
+    .lb-rank    { font-size: 11px; color: var(--gray2); width: 20px; text-align: right; flex-shrink: 0; }
+    .lb-name    { font-size: 12px; font-weight: 600; }
+    .lb-meta    { font-size: 9px; color: var(--gray2); margin-top: 1px; }
+    .lb-name-col{ flex: 1; min-width: 0; }
+    .lb-game-amt{ font-size: 11px; font-weight: 700; width: 44px; text-align: right; flex-shrink: 0; }
+    .lb-game-amt.pos  { color: var(--mint); }
+    .lb-game-amt.neg  { color: var(--red); }
+    .lb-game-amt.zero { color: var(--gray2); }
+    .lb-ttl { font-size: 12px; font-weight: 800; width: 50px; text-align: right; flex-shrink: 0; color: var(--mint); }
+    .lb-ttl.zero { color: var(--gray2); font-weight: 600; }
+
+    /* ── ROLL AGAIN BUTTON ───────────────────── */
+    .btn-roll-again {
+      display: none; margin-top: 12px;
+      background: var(--bg2); color: var(--mint);
+      border: 2px solid var(--mint); padding: 12px 36px;
+      font-size: 16px; font-weight: 700; border-radius: 10px;
+      cursor: pointer; transition: all .15s; font-family: inherit;
+    }
+    .btn-roll-again:hover { background: var(--mint); color: var(--dark); }
+    .btn-roll-again.visible { display: inline-block; }
 
     /* ── ADMIN ───────────────────────────────── */
     .admin-main { flex: 1; max-width: 580px; }
@@ -550,6 +574,7 @@
 
         <button class="btn-roll" id="roll-btn" onclick="startRoll()">🎲 ROLL THE DICE</button>
         <div class="result-banner" id="dice-result"></div>
+        <button class="btn-roll-again" id="roll-again-btn" onclick="rollAgain()">🎲 Roll Again</button>
       </div>
 
       <div class="dice-stats">
@@ -561,6 +586,13 @@
 
     <div class="leaderboard">
       <div class="lb-header">🏆 Leaderboard</div>
+      <div class="lb-col-hdr">
+        <div class="lb-rank" style="visibility:hidden">1</div>
+        <div class="lb-col-hdr-name" style="font-size:11px;color:var(--gray2)">Player</div>
+        <div class="lb-col-hdr-game" style="font-size:11px;color:var(--gray2)">🎲</div>
+        <div class="lb-col-hdr-game" style="font-size:11px;color:var(--gray2)">🃏</div>
+        <div class="lb-col-hdr-ttl" style="font-size:11px;color:var(--mint)">Total</div>
+      </div>
       <div class="lb-list" id="lb-dice"></div>
     </div>
   </div>
@@ -645,6 +677,13 @@
 
     <div class="leaderboard">
       <div class="lb-header">🏆 Leaderboard</div>
+      <div class="lb-col-hdr">
+        <div class="lb-rank" style="visibility:hidden">1</div>
+        <div class="lb-col-hdr-name" style="font-size:11px;color:var(--gray2)">Player</div>
+        <div class="lb-col-hdr-game" style="font-size:11px;color:var(--gray2)">🎲</div>
+        <div class="lb-col-hdr-game" style="font-size:11px;color:var(--gray2)">🃏</div>
+        <div class="lb-col-hdr-ttl" style="font-size:11px;color:var(--mint)">Total</div>
+      </div>
       <div class="lb-list" id="lb-bj"></div>
     </div>
   </div>
@@ -892,7 +931,8 @@ function initApp() {
 
   // Leaderboard listener
   db.ref('planhub_casino/players').on('value', s => {
-    allPlayers = s.val() || {};
+    const val = s.val();
+    if (val !== null) { allPlayers = val; }
     renderLeaderboards();
   });
 
@@ -996,27 +1036,40 @@ async function startRoll(multiplier = 1) {
 
   diceRunning = true;
   document.getElementById('roll-btn').disabled = true;
+  document.getElementById('roll-again-btn').classList.remove('visible');
   document.getElementById('dice-result').innerHTML = '';
   document.getElementById('dice-totals').style.display = 'none';
 
   if (multiplier > 1) playSound('drumroll');
 
-  // Animate
-  ['pd1','pd2','cd1','cd2'].forEach(id => document.getElementById(id).classList.add('rolling'));
-  await sleep(1500);
+  // Step 1: Computer dice roll first (build anticipation)
+  ['cd1','cd2'].forEach(id => document.getElementById(id).classList.add('rolling'));
+  document.getElementById('dice-result').innerHTML = '<div style="color:var(--gray2);font-size:14px;animation:pulse 0.8s infinite alternate">🎲 Computer rolling...</div>';
+  await sleep(1800);
 
-  const p1=rnd6(), p2=rnd6(), c1=rnd6(), c2=rnd6();
-  const pt=p1+p2, ct=c1+c2;
-
-  ['pd1','pd2','cd1','cd2'].forEach(id => document.getElementById(id).classList.remove('rolling'));
-  document.getElementById('pd1').textContent = FACES[p1-1];
-  document.getElementById('pd2').textContent = FACES[p2-1];
+  const c1=rnd6(), c2=rnd6(), ct=c1+c2;
+  ['cd1','cd2'].forEach(id => document.getElementById(id).classList.remove('rolling'));
   document.getElementById('cd1').textContent = FACES[c1-1];
   document.getElementById('cd2').textContent = FACES[c2-1];
-
-  document.getElementById('dice-totals').style.display = 'flex';
-  document.getElementById('p-total').textContent = pt;
   document.getElementById('c-total').textContent = ct;
+
+  // Show computer total briefly
+  document.getElementById('dice-totals').style.display = 'flex';
+  document.getElementById('p-total').textContent = '?';
+  document.getElementById('dice-result').innerHTML = `<div style="color:var(--gray2);font-size:14px">Computer rolled <strong style="color:var(--yellow)">${ct}</strong> — your turn!</div>`;
+  await sleep(900);
+
+  // Step 2: Player dice roll
+  ['pd1','pd2'].forEach(id => document.getElementById(id).classList.add('rolling'));
+  document.getElementById('dice-result').innerHTML = '<div style="color:var(--mint);font-size:15px;font-weight:700;animation:pulse 0.8s infinite alternate">🎲 Rolling...</div>';
+  await sleep(1500);
+
+  const p1=rnd6(), p2=rnd6(), pt=p1+p2;
+  ['pd1','pd2'].forEach(id => document.getElementById(id).classList.remove('rolling'));
+  document.getElementById('pd1').textContent = FACES[p1-1];
+  document.getElementById('pd2').textContent = FACES[p2-1];
+  document.getElementById('p-total').textContent = pt;
+  document.getElementById('dice-result').innerHTML = '';
 
   if (pt > ct) {
     await onDiceWin(multiplier);
@@ -1037,7 +1090,27 @@ async function startRoll(multiplier = 1) {
   }
 
   diceRunning = false;
-  document.getElementById('roll-btn').disabled = (myData.rollsAvailable || 0) <= 0;
+  document.getElementById('roll-btn').disabled = (me.role !== 'Demo' && (myData.rollsAvailable || 0) <= 0);
+  showRollAgain();
+}
+
+function showRollAgain() {
+  const eligible = me.role === 'Demo' || (myData.rollsAvailable || 0) > 0;
+  if (eligible) {
+    document.getElementById('roll-again-btn').classList.add('visible');
+  }
+}
+
+function rollAgain() {
+  document.getElementById('roll-again-btn').classList.remove('visible');
+  document.getElementById('dice-result').innerHTML = '';
+  // Reset dice faces to neutral
+  ['pd1','pd2','cd1','cd2'].forEach(id => { document.getElementById(id).textContent = '⚀'; });
+  document.getElementById('dice-totals').style.display = 'none';
+  document.getElementById('p-total').textContent = '—';
+  document.getElementById('c-total').textContent = '—';
+  diceRunning = false;
+  startRoll();
 }
 
 function calcPrize(mult) {
@@ -1069,6 +1142,7 @@ async function onDiceWin(mult) {
   upd[`planhub_casino/players/${pid}/totalWinnings`]   = firebase.database.ServerValue.increment(prize);
   await db.ref().update(upd);
   db.ref(`planhub_casino/players/${pid}/diceLog`).push({ ts:Date.now(), won:true, prize, mult });
+  showRollAgain();
 }
 
 async function onDiceLoss() {
@@ -1085,6 +1159,7 @@ async function onDiceLoss() {
   upd[`planhub_casino/players/${pid}/diceLosses`] = firebase.database.ServerValue.increment(1);
   await db.ref().update(upd);
   db.ref(`planhub_casino/players/${pid}/diceLog`).push({ ts:Date.now(), won:false, prize:0, mult:1 });
+  showRollAgain();
 }
 
 // ═══════════════════════════════════════════════
@@ -1098,20 +1173,28 @@ function renderLeaderboards() {
 
   const html = rows.map((p,i) => {
     const isMe     = me && p.email === me.email;
-    const isLeader = i === 0;
-    const w        = p.totalWinnings || 0;
+    const isLeader = i === 0 && (p.totalWinnings||0) > 0;
+    const dice     = p.diceWinnings || 0;
+    const total    = p.totalWinnings || 0;
+    const bj       = total - dice;
+    const diceClass = dice > 0 ? 'pos' : dice < 0 ? 'neg' : 'zero';
+    const bjClass   = bj   > 0 ? 'pos' : bj   < 0 ? 'neg' : 'zero';
+    const ttlClass  = total> 0 ? ''    : 'zero';
+    const fmt = v => v >= 0 ? `$${v}` : `-$${Math.abs(v)}`;
     return `<div class="lb-row ${isMe?'me':''} ${isLeader?'leader':''}">
       <div class="lb-rank">${isLeader ? '👑' : i+1}</div>
-      <div style="flex:1">
-        <div class="lb-name">${p.name}${isMe?' <span style="color:var(--gold)">(you)</span>':''}</div>
-        <div class="lb-meta">${p.role||''} · W:${p.diceWins||0} L:${p.diceLosses||0}</div>
+      <div class="lb-name-col">
+        <div class="lb-name">${p.name}${isMe?' <span style="color:var(--mint);font-size:10px">(you)</span>':''}</div>
+        <div class="lb-meta">${p.role||''}</div>
       </div>
-      <div class="lb-amount ${w===0?'zero':''}" >$${w}</div>
+      <div class="lb-game-amt ${diceClass}">${fmt(dice)}</div>
+      <div class="lb-game-amt ${bjClass}">${fmt(bj)}</div>
+      <div class="lb-ttl ${ttlClass}">${fmt(total)}</div>
     </div>`;
   }).join('');
 
-  document.getElementById('lb-dice').innerHTML = html;
-  document.getElementById('lb-bj').innerHTML   = html;
+  document.getElementById('lb-dice').innerHTML = html || '<div style="color:var(--gray2);font-size:12px;text-align:center;padding:16px">No activity yet</div>';
+  document.getElementById('lb-bj').innerHTML   = html || '<div style="color:var(--gray2);font-size:12px;text-align:center;padding:16px">No activity yet</div>';
 }
 
 // ═══════════════════════════════════════════════
