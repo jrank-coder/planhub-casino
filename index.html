@@ -512,7 +512,7 @@
     <div class="dice-main">
       <div class="player-greeting">
         <h2 id="dice-greeting">Welcome!</h2>
-        <div class="rolls-badge">Rolls Available: <span id="rolls-count">0</span></div>
+        <div class="rolls-badge" id="rolls-badge">Rolls Available: <span id="rolls-count">0</span></div>
         <div class="sync-note" id="sync-note"></div>
       </div>
       <!-- Surprise mode banner -->
@@ -788,10 +788,12 @@ const ROSTER = {
   "ksongco@planhub.com":       { name:"Kevin Songco",      id:"80172587",     role:"SDR"   },
   "nwilliams@planhub.com":     { name:"Nicole Williams",   id:"1283636153",   role:"SDR"   },
   "nbauscher@planhub.com":     { name:"Nathan Bauscher",   id:"688732035",    role:"SDR"   },
-  // Leadership — can play (get rolls) but hidden from leaderboard
-  "jrank@planhub.com":         { name:"Josh Rank",         id:"826736575",    role:"Admin" },
-  "jmaurer@planhub.com":       { name:"John Maurer",       id:"43905666",     role:"Admin" },
-  "ncappello@planhub.com":     { name:"Nick Cappello",     id:"86626888",     role:"Admin" },
+  // Demo/Leadership — unlimited play, never on leaderboard
+  "jrank@planhub.com":         { name:"Josh Rank",         id:"826736575",    role:"Demo" },
+  "jmaurer@planhub.com":       { name:"John Maurer",       id:"43905666",     role:"Demo" },
+  "ncappello@planhub.com":     { name:"Nick Cappello",     id:"86626888",     role:"Demo" },
+  "tsmart@planhub.com":        { name:"Tom Smart",         id:"tsmart",       role:"Demo" },
+  "choward@planhub.com":       { name:"Carter Howard",     id:"choward",      role:"Demo" },
 };
 
 // ═══════════════════════════════════════════════
@@ -927,7 +929,7 @@ function switchTab(tab) {
     if (!settings.bjEnabled && settings.bjEnabled !== undefined) {
       toast('Blackjack is paused by the admin.'); return;
     }
-    if ((myData.diceWinnings || 0) <= 0) {
+    if (me.role !== 'Demo' && (myData.diceWinnings || 0) <= 0) {
       toast('Win at the dice table first to unlock blackjack!'); return;
     }
   }
@@ -945,23 +947,32 @@ let diceRunning = false;
 
 function refreshDiceUI() {
   const d = myData;
+  const isDemo = me.role === 'Demo';
   document.getElementById('dice-greeting').textContent = `Hey, ${me.name}! 🎲`;
-  document.getElementById('rolls-count').textContent   = d.rollsAvailable || 0;
   document.getElementById('st-wins').textContent       = d.diceWins || 0;
   document.getElementById('st-losses').textContent     = d.diceLosses || 0;
   document.getElementById('st-winnings').textContent   = '$' + (d.totalWinnings || 0);
 
-  const btn = document.getElementById('roll-btn');
-  if ((d.rollsAvailable || 0) <= 0) {
-    btn.disabled = true;
-    btn.textContent = '🎲 No Rolls Available';
-  } else {
-    btn.disabled = false;
+  const badge = document.getElementById('rolls-badge');
+  const btn   = document.getElementById('roll-btn');
+
+  if (isDemo) {
+    badge.innerHTML = '🎰 Demo Mode — <strong style="color:var(--mint)">Unlimited Rolls</strong>';
+    btn.disabled    = false;
     btn.textContent = '🎲 ROLL THE DICE';
+  } else {
+    badge.innerHTML = `Rolls Available: <span id="rolls-count">${d.rollsAvailable || 0}</span>`;
+    if ((d.rollsAvailable || 0) <= 0) {
+      btn.disabled    = true;
+      btn.textContent = '🎲 No Rolls Available';
+    } else {
+      btn.disabled    = false;
+      btn.textContent = '🎲 ROLL THE DICE';
+    }
   }
 
   // BJ tab indicator
-  if ((d.diceWinnings || 0) > 0) {
+  if ((d.diceWinnings || 0) > 0 || isDemo) {
     document.getElementById('bj-lock-icon').textContent = '🃏';
   } else {
     document.getElementById('bj-lock-icon').textContent = '🔒';
@@ -981,7 +992,7 @@ function refreshDiceUI() {
 
 async function startRoll(multiplier = 1) {
   if (diceRunning) return;
-  if ((myData.rollsAvailable || 0) <= 0) { toast('No rolls available!'); return; }
+  if (me.role !== 'Demo' && (myData.rollsAvailable || 0) <= 0) { toast('No rolls available!'); return; }
 
   diceRunning = true;
   document.getElementById('roll-btn').disabled = true;
@@ -1050,7 +1061,9 @@ async function onDiceWin(mult) {
 
   const pid = me.id;
   const upd = {};
-  upd[`planhub_casino/players/${pid}/rollsAvailable`]  = firebase.database.ServerValue.increment(-1);
+  if (me.role !== 'Demo') {
+    upd[`planhub_casino/players/${pid}/rollsAvailable`] = firebase.database.ServerValue.increment(-1);
+  }
   upd[`planhub_casino/players/${pid}/diceWins`]        = firebase.database.ServerValue.increment(1);
   upd[`planhub_casino/players/${pid}/diceWinnings`]    = firebase.database.ServerValue.increment(prize);
   upd[`planhub_casino/players/${pid}/totalWinnings`]   = firebase.database.ServerValue.increment(prize);
@@ -1066,8 +1079,10 @@ async function onDiceLoss() {
 
   const pid = me.id;
   const upd = {};
-  upd[`planhub_casino/players/${pid}/rollsAvailable`] = firebase.database.ServerValue.increment(-1);
-  upd[`planhub_casino/players/${pid}/diceLosses`]     = firebase.database.ServerValue.increment(1);
+  if (me.role !== 'Demo') {
+    upd[`planhub_casino/players/${pid}/rollsAvailable`] = firebase.database.ServerValue.increment(-1);
+  }
+  upd[`planhub_casino/players/${pid}/diceLosses`] = firebase.database.ServerValue.increment(1);
   await db.ref().update(upd);
   db.ref(`planhub_casino/players/${pid}/diceLog`).push({ ts:Date.now(), won:false, prize:0, mult:1 });
 }
@@ -1077,7 +1092,7 @@ async function onDiceLoss() {
 // ═══════════════════════════════════════════════
 function renderLeaderboards() {
   const rows = Object.entries(allPlayers)
-    .filter(([,p]) => p && p.name && p.role !== 'Admin')
+    .filter(([,p]) => p && p.name && p.role !== 'Demo')
     .map(([,p]) => p)
     .sort((a,b) => (b.totalWinnings||0) - (a.totalWinnings||0));
 
@@ -1103,8 +1118,9 @@ function renderLeaderboards() {
 // BLACKJACK ENGINE
 // ═══════════════════════════════════════════════
 function refreshBJUI() {
-  const bankroll = myData.totalWinnings || 0;
-  const hasWon   = (myData.diceWinnings || 0) > 0;
+  const isDemo   = me.role === 'Demo';
+  const bankroll = isDemo ? Math.max(myData.totalWinnings || 0, 100) : (myData.totalWinnings || 0);
+  const hasWon   = isDemo || (myData.diceWinnings || 0) > 0;
   const bjOn     = settings.bjEnabled !== false;
 
   document.getElementById('bj-bankroll-val').textContent = '$' + bankroll;
@@ -1504,6 +1520,7 @@ function changePassword() {
 function populateGrantSelect() {
   const opts=Object.values(ROSTER)
     .filter(p=>p.role==='AE'||p.role==='SDR')
+    .filter((p,i,a)=>a.findIndex(x=>x.id===p.id)===i) // dedupe by id
     .sort((a,b)=>a.name.localeCompare(b.name))
     .map(p=>`<option value="${p.id}">${p.name} (${p.role})</option>`).join('');
   document.getElementById('grant-sel').innerHTML=opts;
