@@ -1229,10 +1229,16 @@ async function onDiceLoss() {
 // LEADERBOARD
 // ═══════════════════════════════════════════════
 function renderLeaderboards() {
-  const demoIds = new Set(Object.values(ROSTER).filter(r => r.role === 'Demo').map(r => r.id));
+  const demoIds   = new Set(Object.values(ROSTER).filter(r => r.role === 'Demo').map(r => r.id));
+  const rosterById = {};
+  Object.values(ROSTER).forEach(r => { rosterById[r.id] = r; });
   const rows = Object.entries(allPlayers)
-    .filter(([id,p]) => p && p.name && p.role !== 'Demo' && !demoIds.has(id))
-    .map(([,p]) => p)
+    .filter(([id,p]) => p && !demoIds.has(id) && (p.role !== 'Demo') && (p.name || rosterById[id]))
+    .map(([id,p]) => {
+      // Fill in name/role from ROSTER if player hasn't logged in yet
+      const r = rosterById[id];
+      return { ...p, name: p.name || (r && r.name) || id, role: p.role || (r && r.role) || '' };
+    })
     .sort((a,b) => (b.totalWinnings||0) - (a.totalWinnings||0));
 
   const html = rows.map((p,i) => {
