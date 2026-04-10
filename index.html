@@ -201,11 +201,12 @@
     .dice-pair { display: flex; gap: 8px; justify-content: center; }
     .die {
       width: 96px; height: 96px; background: #fff;
-      border-radius: 16px; border: 3px solid #ccc;
+      border-radius: 16px; border: 4px solid #222;
       display: flex; align-items: center; justify-content: center;
-      font-size: 52px; color: #222;
       box-shadow: 4px 4px 14px rgba(0,0,0,.6);
+      overflow: hidden;
     }
+    .die svg { width: 80px; height: 80px; }
     .die.rolling { animation: dieRoll .12s infinite; }
     @keyframes dieRoll {
       0%  { transform: rotate(0deg)   scale(1);    }
@@ -314,6 +315,13 @@
     .hand-total-txt { font-size: 13px; color: var(--gray); margin-top: 4px; text-align: center; }
     .hand-total-txt.bust { color: var(--red); font-weight: 700; }
     .hand-total-txt.bj   { color: var(--gold); font-weight: 700; }
+    .hand-total-big {
+      font-size: 48px; font-weight: 900; text-align: center;
+      min-height: 56px; line-height: 1; color: var(--white);
+      letter-spacing: -1px; margin: 2px 0 4px;
+    }
+    .hand-total-big.bust { color: var(--red); }
+    .hand-total-big.bj   { color: var(--yellow); }
 
     .bj-divider { border: none; border-top: 1px solid #2a4a2a; margin: 12px 0; }
 
@@ -547,16 +555,16 @@
           <div class="dice-group">
             <label>You</label>
             <div class="dice-pair">
-              <div class="die" id="pd1">⚀</div>
-              <div class="die" id="pd2">⚀</div>
+              <div class="die" id="pd1"></div>
+              <div class="die" id="pd2"></div>
             </div>
           </div>
           <div class="dice-vs">VS</div>
           <div class="dice-group">
             <label>Computer</label>
             <div class="dice-pair">
-              <div class="die" id="cd1">⚀</div>
-              <div class="die" id="cd2">⚀</div>
+              <div class="die" id="cd1"></div>
+              <div class="die" id="cd2"></div>
             </div>
           </div>
         </div>
@@ -616,6 +624,7 @@
       <hr class="tr-divider">
       <div class="tr-rule"><span class="tr-icon">↔️</span><div><strong>Tie = Push</strong> — wager returned, no win or loss</div></div>
       <div class="tr-rule"><span class="tr-icon">💰</span><div>Wager from your <strong>dice winnings</strong> bankroll only</div></div>
+      <div class="tr-rule"><span class="tr-icon">🪙</span><div>Minimum wager <strong>$25</strong>, increments of <strong>$5</strong></div></div>
     </div>
 
     <div class="bj-main" id="bj-main">
@@ -633,13 +642,15 @@
 
         <div class="bj-table">
           <!-- Dealer -->
-          <div class="zone-label">Dealer <span id="dealer-total-lbl" class="hand-total-txt"></span></div>
+          <div class="zone-label">Dealer</div>
+          <div class="hand-total-big" id="dealer-total-lbl"></div>
           <div class="card-row" id="dealer-cards"></div>
 
           <hr class="bj-divider">
 
           <!-- Player -->
-          <div class="zone-label">You <span id="player-total-lbl" class="hand-total-txt"></span></div>
+          <div class="zone-label">You</div>
+          <div class="hand-total-big" id="player-total-lbl"></div>
           <div id="player-hands-wrap">
             <div class="card-row" id="player-cards"></div>
           </div>
@@ -651,8 +662,8 @@
           <div class="bj-wager-section" id="bj-wager-section">
             <div class="wager-lbl">Your Wager</div>
             <div class="wager-row">
-              <input type="range"  class="wager-slider" id="wager-slider" min="1" max="100" value="25" oninput="syncWager('slider')">
-              <input type="number" class="wager-input"  id="wager-input"  min="1" max="100" value="25" oninput="syncWager('input')">
+              <input type="range"  class="wager-slider" id="wager-slider" min="25" step="5" max="100" value="25" oninput="syncWager('slider')">
+              <input type="number" class="wager-input"  id="wager-input"  min="25" step="5" max="100" value="25" oninput="syncWager('input')">
             </div>
           </div>
 
@@ -671,6 +682,7 @@
           <div class="stat-chip"><div class="sv" id="bj-st-wins">0</div><div class="sl">BJ Wins</div></div>
           <div class="stat-chip"><div class="sv" id="bj-st-losses">0</div><div class="sl">BJ Losses</div></div>
           <div class="stat-chip"><div class="sv" id="bj-st-pushes">0</div><div class="sl">Pushes</div></div>
+          <div class="stat-chip"><div class="sv" id="bj-st-net" style="color:var(--mint)">$0</div><div class="sl">BJ Net</div></div>
         </div>
       </div>
     </div>
@@ -897,6 +909,9 @@ auth.onAuthStateChanged(user => {
 // INIT
 // ═══════════════════════════════════════════════
 function initApp() {
+  // Initialize die faces
+  ['pd1','pd2','cd1','cd2'].forEach(id => setDie(id, 1));
+
   // Bootstrap settings if missing
   db.ref('planhub_casino/settings').once('value').then(s => {
     if (!s.exists()) {
@@ -982,7 +997,34 @@ function switchTab(tab) {
 // ═══════════════════════════════════════════════
 // DICE GAME
 // ═══════════════════════════════════════════════
-const FACES = ['⚀','⚁','⚂','⚃','⚄','⚅'];
+// Die face SVG dot patterns
+const DIE_DOTS = {
+  1: [[50,50]],
+  2: [[28,28],[72,72]],
+  3: [[28,28],[50,50],[72,72]],
+  4: [[28,28],[72,28],[28,72],[72,72]],
+  5: [[28,28],[72,28],[50,50],[28,72],[72,72]],
+  6: [[28,25],[72,25],[28,50],[72,50],[28,75],[72,75]]
+};
+function dieFaceHTML(n) {
+  const dots = DIE_DOTS[n].map(([cx,cy]) =>
+    `<circle cx="${cx}" cy="${cy}" r="8" fill="#1a1a2e"/>`
+  ).join('');
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">${dots}</svg>`;
+}
+const rollingIntervals = {};
+function startDieAnim(id) {
+  const el = document.getElementById(id);
+  el.classList.add('rolling');
+  rollingIntervals[id] = setInterval(() => { el.innerHTML = dieFaceHTML(rnd6()); }, 80);
+}
+function stopDieAnim(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('rolling');
+  clearInterval(rollingIntervals[id]); delete rollingIntervals[id];
+}
+function setDie(id, n) { document.getElementById(id).innerHTML = dieFaceHTML(n); }
+
 let diceRunning = false;
 
 function refreshDiceUI() {
@@ -1043,14 +1085,13 @@ async function startRoll(multiplier = 1) {
   if (multiplier > 1) playSound('drumroll');
 
   // Step 1: Computer dice roll first (build anticipation)
-  ['cd1','cd2'].forEach(id => document.getElementById(id).classList.add('rolling'));
+  ['cd1','cd2'].forEach(startDieAnim);
   document.getElementById('dice-result').innerHTML = '<div style="color:var(--gray2);font-size:14px;animation:pulse 0.8s infinite alternate">🎲 Computer rolling...</div>';
   await sleep(1800);
 
   const c1=rnd6(), c2=rnd6(), ct=c1+c2;
-  ['cd1','cd2'].forEach(id => document.getElementById(id).classList.remove('rolling'));
-  document.getElementById('cd1').textContent = FACES[c1-1];
-  document.getElementById('cd2').textContent = FACES[c2-1];
+  ['cd1','cd2'].forEach(stopDieAnim);
+  setDie('cd1',c1); setDie('cd2',c2);
   document.getElementById('c-total').textContent = ct;
 
   // Show computer total briefly
@@ -1060,14 +1101,13 @@ async function startRoll(multiplier = 1) {
   await sleep(900);
 
   // Step 2: Player dice roll
-  ['pd1','pd2'].forEach(id => document.getElementById(id).classList.add('rolling'));
+  ['pd1','pd2'].forEach(startDieAnim);
   document.getElementById('dice-result').innerHTML = '<div style="color:var(--mint);font-size:15px;font-weight:700;animation:pulse 0.8s infinite alternate">🎲 Rolling...</div>';
   await sleep(1500);
 
   const p1=rnd6(), p2=rnd6(), pt=p1+p2;
-  ['pd1','pd2'].forEach(id => document.getElementById(id).classList.remove('rolling'));
-  document.getElementById('pd1').textContent = FACES[p1-1];
-  document.getElementById('pd2').textContent = FACES[p2-1];
+  ['pd1','pd2'].forEach(stopDieAnim);
+  setDie('pd1',p1); setDie('pd2',p2);
   document.getElementById('p-total').textContent = pt;
   document.getElementById('dice-result').innerHTML = '';
 
@@ -1105,7 +1145,7 @@ function rollAgain() {
   document.getElementById('roll-again-btn').classList.remove('visible');
   document.getElementById('dice-result').innerHTML = '';
   // Reset dice faces to neutral
-  ['pd1','pd2','cd1','cd2'].forEach(id => { document.getElementById(id).textContent = '⚀'; });
+  ['pd1','pd2','cd1','cd2'].forEach(id => setDie(id, 1));
   document.getElementById('dice-totals').style.display = 'none';
   document.getElementById('p-total').textContent = '—';
   document.getElementById('c-total').textContent = '—';
@@ -1210,6 +1250,10 @@ function refreshBJUI() {
   document.getElementById('bj-st-wins').textContent      = myData.bjWins   || 0;
   document.getElementById('bj-st-losses').textContent    = myData.bjLosses || 0;
   document.getElementById('bj-st-pushes').textContent    = myData.bjPushes || 0;
+  const bjNet = (myData.totalWinnings||0) - (myData.diceWinnings||0);
+  const netEl = document.getElementById('bj-st-net');
+  netEl.textContent = (bjNet>=0?'$'+bjNet:'-$'+Math.abs(bjNet));
+  netEl.style.color = bjNet>0?'var(--mint)':bjNet<0?'var(--red)':'var(--gray2)';
 
   const locked   = document.getElementById('bj-locked');
   const unlocked = document.getElementById('bj-unlocked');
@@ -1219,10 +1263,13 @@ function refreshBJUI() {
     unlocked.style.display = 'flex';
     const sl = document.getElementById('wager-slider');
     const ip = document.getElementById('wager-input');
-    sl.max = Math.max(1, bankroll);
-    ip.max = Math.max(1, bankroll);
-    if (bj.wager > bankroll) {
-      bj.wager = Math.max(1, bankroll);
+    const MIN_W = 25;
+    sl.min = MIN_W; sl.step = 5;
+    ip.min = MIN_W; ip.step = 5;
+    sl.max = Math.max(MIN_W, bankroll);
+    ip.max = Math.max(MIN_W, bankroll);
+    if (bj.wager > bankroll || bj.wager < MIN_W) {
+      bj.wager = Math.min(Math.max(MIN_W, bankroll), Math.max(MIN_W, bankroll));
       sl.value = ip.value = bj.wager;
     }
   } else {
@@ -1286,9 +1333,9 @@ function renderDealer(revealAll=false) {
   const tot = handVal(visible);
   const lbl = document.getElementById('dealer-total-lbl');
   lbl.textContent = revealAll
-    ? `(${tot}${tot>21?' — BUST':''})`
-    : `(${tot})`;
-  lbl.className = `hand-total-txt${revealAll&&tot>21?' bust':''}`;
+    ? `${tot}${tot>21?' BUST':''}`
+    : `${tot}`;
+  lbl.className = `hand-total-big${revealAll&&tot>21?' bust':''}`;
 }
 function renderPlayer() {
   if (bj.playerHands.length===1) {
@@ -1296,15 +1343,16 @@ function renderPlayer() {
     document.getElementById('player-hands-wrap').innerHTML =
       `<div class="card-row">${hand.map(cardHTML).join('')}</div>`;
     const lbl = document.getElementById('player-total-lbl');
-    lbl.textContent = `(${tot}${tot>21?' — BUST':isNatBJ(hand)?' — BLACKJACK!':''})`;
-    lbl.className   = `hand-total-txt${tot>21?' bust':isNatBJ(hand)?' bj':''}`;
+    lbl.textContent = `${tot}${tot>21?' BUST':isNatBJ(hand)?' BLACKJACK!':''}`;
+    lbl.className   = `hand-total-big${tot>21?' bust':isNatBJ(hand)?' bj':''}`;
   } else {
     document.getElementById('player-hands-wrap').innerHTML =
       bj.playerHands.map((hand,i)=>{
         const tot=handVal(hand);
         const active= i===bj.activeIdx && bj.phase==='player';
         return `<div class="split-hand ${active?'active-hand':''}">
-          <div class="zone-label">Hand ${i+1} (${tot}${tot>21?' — BUST':''})</div>
+          <div class="zone-label">Hand ${i+1}</div>
+          <div class="hand-total-big${tot>21?' bust':''}" style="font-size:32px;min-height:38px">${tot}${tot>21?' BUST':''}</div>
           <div class="card-row">${hand.map(cardHTML).join('')}</div>
         </div>`;
       }).join('');
@@ -1344,7 +1392,7 @@ function dealHand() {
   const bankroll = myData.totalWinnings||0;
   if (bankroll<=0){ toast('No bankroll — win some dice rolls first!'); return; }
   const wager = parseInt(document.getElementById('wager-input').value)||0;
-  if (wager<1)         { toast('Set a wager.'); return; }
+  if (wager<25)        { toast('Minimum wager is $25.'); return; }
   if (wager>bankroll)  { toast('Wager exceeds your bankroll.'); return; }
 
   bj.deck         = shuffle(makeDeck());
@@ -1508,15 +1556,16 @@ function newHand() {
 
 function syncWager(src) {
   const sl=document.getElementById('wager-slider'), ip=document.getElementById('wager-input');
-  const bankroll = myData.totalWinnings||1;
+  const bankroll = myData.totalWinnings||25;
+  const MIN_WAGER = 25, STEP = 5;
   if (src==='slider') {
     ip.value = sl.value;
   } else {
-    let v=parseInt(ip.value)||1;
-    v=Math.max(1,Math.min(v,bankroll));
+    let v=parseInt(ip.value)||MIN_WAGER;
+    v=Math.round(Math.max(MIN_WAGER,Math.min(v,bankroll))/STEP)*STEP;
     sl.value=ip.value=v;
   }
-  bj.wager = parseInt(ip.value)||1;
+  bj.wager = parseInt(ip.value)||MIN_WAGER;
 }
 
 // ═══════════════════════════════════════════════
