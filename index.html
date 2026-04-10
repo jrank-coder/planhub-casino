@@ -387,10 +387,7 @@
 <body>
 
 <canvas id="confetti-canvas"></canvas>
-<audio id="aud-cheers"   src="audio/cheers.mp3"   preload="auto"></audio>
-<audio id="aud-sigh"     src="audio/sigh.mp3"     preload="auto"></audio>
-<audio id="aud-womp"     src="audio/wompwomp.mp3" preload="auto"></audio>
-<audio id="aud-drumroll" src="audio/drumroll.mp3" preload="auto"></audio>
+<!-- Audio synthesized via Web Audio API — no files needed -->
 
 <!-- ═══════════════ AUTH ═══════════════ -->
 <div id="auth-screen">
@@ -1444,10 +1441,84 @@ function launchConfetti() {
 // ═══════════════════════════════════════════════
 // AUDIO
 // ═══════════════════════════════════════════════
+// ── Web Audio synthesis (no mp3 files needed) ──
+const _ac = () => { if (!window._audioCtx) window._audioCtx = new (window.AudioContext||window.webkitAudioContext)(); return window._audioCtx; };
+
 function playSound(name) {
-  const map={cheers:'aud-cheers',sigh:'aud-sigh',womp:'aud-womp',drumroll:'aud-drumroll'};
-  const el=document.getElementById(map[name]);
-  if(el){ el.currentTime=0; el.play().catch(()=>{}); }
+  try {
+    const ctx = _ac();
+    if (name === 'cheers')   _playCheers(ctx);
+    if (name === 'sigh')     _playSigh(ctx);
+    if (name === 'womp')     _playWomp(ctx);
+    if (name === 'drumroll') _playDrumroll(ctx);
+  } catch(e) {}
+}
+
+function _playCheers(ctx) {
+  // Crowd cheer: burst of filtered noise + rising pitch shimmer, 2.5s
+  const dur = 2.5;
+  const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+  const d   = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(i / d.length * Math.PI);
+  const src = ctx.createBufferSource(); src.buffer = buf;
+  const bp  = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1200; bp.Q.value = 0.8;
+  const gain = ctx.createGain(); gain.gain.setValueAtTime(0, ctx.currentTime); gain.gain.linearRampToValueAtTime(0.55, ctx.currentTime + 0.1); gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + dur);
+  src.connect(bp); bp.connect(gain); gain.connect(ctx.destination);
+  src.start(); src.stop(ctx.currentTime + dur);
+
+  // Add a few celebratory high beeps
+  [0, 0.15, 0.3].forEach((delay, i) => {
+    const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.frequency.value = 880 + i * 220; osc.type = 'sine';
+    g.gain.setValueAtTime(0.18, ctx.currentTime + delay);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay + 0.3);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.35);
+  });
+}
+
+function _playSigh(ctx) {
+  // Descending exhale: detuned oscillators dropping in pitch over 1.2s
+  const osc = ctx.createOscillator(); const g = ctx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(320, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 1.2);
+  g.gain.setValueAtTime(0.22, ctx.currentTime);
+  g.gain.linearRampToValueAtTime(0.0, ctx.currentTime + 1.2);
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 600;
+  osc.connect(lp); lp.connect(g); g.connect(ctx.destination);
+  osc.start(); osc.stop(ctx.currentTime + 1.3);
+}
+
+function _playWomp(ctx) {
+  // Classic sad trombone: wah-wah two descending notes
+  [[0, 440, 220], [0.55, 370, 185]].forEach(([delay, f1, f2]) => {
+    const osc = ctx.createOscillator(); const g = ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(f1, ctx.currentTime + delay);
+    osc.frequency.exponentialRampToValueAtTime(f2, ctx.currentTime + delay + 0.5);
+    g.gain.setValueAtTime(0.3, ctx.currentTime + delay);
+    g.gain.linearRampToValueAtTime(0.0, ctx.currentTime + delay + 0.55);
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 900;
+    osc.connect(lp); lp.connect(g); g.connect(ctx.destination);
+    osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + 0.6);
+  });
+}
+
+function _playDrumroll(ctx) {
+  // Snare roll: rapid noise bursts accelerating over 1.5s
+  const hits = 28;
+  for (let i = 0; i < hits; i++) {
+    const t = ctx.currentTime + (i / hits) * 1.5 * (1 - i / hits / 2);
+    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
+    const d   = buf.getChannelData(0);
+    for (let j = 0; j < d.length; j++) d[j] = Math.random() * 2 - 1;
+    const src  = ctx.createBufferSource(); src.buffer = buf;
+    const hp   = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2000;
+    const gain = ctx.createGain(); gain.gain.setValueAtTime(0.18, t); gain.gain.exponentialRampToValueAtTime(0.001, t + 0.04);
+    src.connect(hp); hp.connect(gain); gain.connect(ctx.destination);
+    src.start(t); src.stop(t + 0.05);
+  }
 }
 
 // ═══════════════════════════════════════════════
