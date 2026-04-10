@@ -935,6 +935,9 @@ function initApp() {
         diceWins:0, diceLosses:0, diceWinnings:0, totalWinnings:0,
         bjHandsPlayed:0, bjWins:0, bjLosses:0, bjPushes:0
       });
+    } else {
+      // Always keep name/email/role in sync with roster (fixes stale records)
+      db.ref(`planhub_casino/players/${me.id}`).update({ name: me.name, email: me.email, role: me.role });
     }
   });
   // Live listener for own data
@@ -1206,8 +1209,9 @@ async function onDiceLoss() {
 // LEADERBOARD
 // ═══════════════════════════════════════════════
 function renderLeaderboards() {
+  const demoIds = new Set(Object.values(ROSTER).filter(r => r.role === 'Demo').map(r => r.id));
   const rows = Object.entries(allPlayers)
-    .filter(([,p]) => p && p.name && p.role !== 'Demo')
+    .filter(([id,p]) => p && p.name && p.role !== 'Demo' && !demoIds.has(id))
     .map(([,p]) => p)
     .sort((a,b) => (b.totalWinnings||0) - (a.totalWinnings||0));
 
