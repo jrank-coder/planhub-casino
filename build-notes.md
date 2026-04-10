@@ -123,7 +123,7 @@ Default password: `casino2026`
 
 | # | Question | Status |
 |---|---|---|
-| 1 | Upsell SDRs (Megan, Amanda) — do they participate? If so, what earns rolls? | Open |
+| 1 | Upsell SDRs (Megan, Amanda) — do they participate? If so, what earns rolls? | Confirmed — earn rolls via warm transfers, same as SC/SP SDRs |
 | 2 | Audio files — Josh to source or use royalty-free? | Open |
 | 3 | Show exact dollar amounts on leaderboard to all players, or just rank? | Currently shows exact $ |
 | 4 | Double-or-nothing cap confirmed at 8×? | Implemented at 8× |
