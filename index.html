@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🎰 PlanHub Casino</title>
+  <title>planHub Casino</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -12,17 +14,23 @@
 
   <style>
     :root {
-      --bg:    #0b1929;
-      --bg2:   #112240;
-      --felt:  #0e3460;
-      --felt2: #1a4a8a;
-      --gold:  #ff6600;
-      --gold2: #e05500;
-      --green: #2ecc71;
-      --red:   #e74c3c;
-      --blue:  #0066cc;
-      --gray:  #8899aa;
-      --white: #f0f4ff;
+      --bg:      #1e2830;   /* dark version of PlanHub dark blue */
+      --bg2:     #25313e;   /* PlanHub Dark Blue */
+      --felt:    #1c3530;   /* dark teal — casino felt with mint tint */
+      --felt2:   #244540;
+      --mint:    #00b894;   /* PlanHub Mint Green — primary CTA */
+      --mint2:   #70d7c2;   /* PlanHub Medium Green */
+      --gold:    #00b894;   /* alias for mint (used throughout) */
+      --gold2:   #009b7d;
+      --green:   #00b894;   /* wins */
+      --red:     #e74c3c;   /* losses */
+      --coral:   #e17055;   /* tertiary */
+      --blue:    #0984e3;   /* tertiary blue */
+      --yellow:  #fdcb6e;   /* ties / surprise */
+      --gray:    #525a65;   /* PlanHub Dark Grey */
+      --gray2:   #8a9aaa;
+      --white:   #f5fcfb;   /* PlanHub Neutral Mint */
+      --dark:    #25313e;   /* PlanHub black */
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,7 +38,7 @@
     body {
       background: var(--bg);
       color: var(--white);
-      font-family: 'Segoe UI', Tahoma, sans-serif;
+      font-family: 'Inter', 'Segoe UI', Tahoma, sans-serif;
       min-height: 100vh;
     }
 
@@ -48,10 +56,10 @@
     }
     .auth-card {
       background: var(--bg2);
-      border: 2px solid var(--gold);
+      border: 2px solid var(--mint);
       border-radius: 18px; padding: 52px 44px;
       text-align: center; max-width: 400px;
-      box-shadow: 0 0 48px rgba(241,196,15,.25);
+      box-shadow: 0 0 48px rgba(0,184,148,.2);
     }
     .auth-logo  { font-size: 60px; margin-bottom: 14px; }
     .auth-title { font-size: 34px; font-weight: 800; color: var(--gold); margin-bottom: 6px; }
@@ -70,31 +78,24 @@
     #app { display: none; flex-direction: column; min-height: 100vh; }
 
     header {
-      background: linear-gradient(135deg,#071525,#0d2340);
-      border-bottom: 3px solid var(--gold);
-      padding: 14px 24px;
+      background: var(--bg2);
+      border-bottom: 3px solid var(--mint);
+      padding: 12px 24px;
       display: flex; align-items: center; justify-content: space-between;
     }
     .header-logo {
-      display: flex; align-items: center; gap: 14px;
+      display: flex; align-items: center; gap: 12px;
     }
-    .ph-logo-mark {
-      width: 38px; height: 38px;
-      background: var(--gold); border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; font-weight: 900; color: #fff;
-      font-style: italic; letter-spacing: -1px;
-      box-shadow: 0 0 14px rgba(255,102,0,.5);
+    .header-logo img {
+      height: 40px; width: auto;
     }
     .header-title {
-      font-size: 24px; font-weight: 800; color: var(--white);
-      letter-spacing: 1px; line-height: 1;
+      font-size: 20px; font-weight: 700; color: var(--white);
+      line-height: 1.1;
     }
-    .header-title span {
-      color: var(--gold);
-    }
+    .header-title .brand { color: var(--mint); font-weight: 800; }
     .header-subtitle {
-      font-size: 11px; color: var(--gray); letter-spacing: 2px;
+      font-size: 10px; color: var(--gray2); letter-spacing: 2px;
       text-transform: uppercase; margin-top: 2px;
     }
     .header-right { display: flex; align-items: center; gap: 16px; }
@@ -117,21 +118,55 @@
 
     /* ── TABS ────────────────────────────────── */
     .tab-nav {
-      display: flex; background: #091409;
-      border-bottom: 2px solid #222; padding: 0 24px;
+      display: flex; background: var(--bg2);
+      border-bottom: 2px solid rgba(0,184,148,.3); padding: 0 24px;
     }
     .nav-tab {
       padding: 14px 22px; cursor: pointer;
-      font-size: 15px; font-weight: 600; color: var(--gray);
+      font-size: 15px; font-weight: 600; color: var(--gray2);
       border-bottom: 3px solid transparent; transition: all .2s;
       display: flex; align-items: center; gap: 6px;
     }
     .nav-tab:hover  { color: var(--white); }
-    .nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+    .nav-tab.active { color: var(--mint); border-bottom-color: var(--mint); }
 
-    /* tab-content is a flex row (main area + leaderboard) */
-    .tab-content { display: none; flex: 1; padding: 24px; gap: 24px; }
+    /* Three-column layout: table-rules | game | leaderboard */
+    .tab-content { display: none; flex: 1; padding: 20px; gap: 20px; align-items: flex-start; }
     .tab-content.active { display: flex; }
+
+    /* ── TABLE RULES PANEL ───────────────────── */
+    .table-rules {
+      width: 210px; flex-shrink: 0;
+      background: var(--bg2); border: 1px solid rgba(0,184,148,.25);
+      border-radius: 14px; padding: 18px 16px;
+    }
+    .tr-header {
+      font-size: 12px; font-weight: 700; color: var(--mint);
+      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .tr-rule {
+      display: flex; gap: 8px; align-items: flex-start;
+      margin-bottom: 10px; font-size: 12px; line-height: 1.45; color: var(--white);
+    }
+    .tr-rule .tr-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+    .tr-rule strong { color: var(--mint); }
+    .tr-divider { border: none; border-top: 1px solid rgba(255,255,255,.08); margin: 12px 0; }
+
+    /* ── SURPRISE MODE BANNER ────────────────── */
+    .surprise-banner {
+      display: none; align-items: center; justify-content: center; gap: 8px;
+      background: linear-gradient(135deg, #7d5a00, #a07800);
+      border: 1px solid var(--yellow); border-radius: 10px;
+      padding: 10px 18px; margin-bottom: 4px;
+      font-size: 14px; font-weight: 700; color: var(--yellow);
+      animation: surprisePulse 2s ease-in-out infinite;
+    }
+    .surprise-banner.visible { display: flex; }
+    @keyframes surprisePulse {
+      0%,100% { box-shadow: 0 0 8px rgba(253,203,110,.3); }
+      50%      { box-shadow: 0 0 20px rgba(253,203,110,.7); }
+    }
 
     /* ── DICE TAB ────────────────────────────── */
     .dice-main {
@@ -149,9 +184,9 @@
     .sync-note { font-size: 11px; color: var(--gray); margin-top: 4px; }
 
     .dice-arena {
-      background: var(--felt); border: 3px solid var(--gold2);
+      background: var(--felt); border: 3px solid var(--mint);
       border-radius: 20px; padding: 28px 32px;
-      width: 100%; max-width: 540px; text-align: center;
+      width: 100%; text-align: center;
     }
     .dice-row {
       display: flex; justify-content: space-around;
@@ -179,7 +214,7 @@
       75% { transform: rotate(8deg)   scale(.95);  }
       100%{ transform: rotate(0deg)   scale(1);    }
     }
-    .dice-vs { font-size: 26px; font-weight: 800; color: var(--gold); }
+    .dice-vs { font-size: 26px; font-weight: 800; color: var(--mint); }
 
     .dice-totals { display: flex; justify-content: space-around; margin-bottom: 14px; }
     .dice-total { text-align: center; }
@@ -203,8 +238,8 @@
     }
     .result-win  { font-size: 24px; font-weight: 800; color: var(--green); animation: bounceIn .4s ease; }
     .result-lose { font-size: 28px; font-weight: 800; color: var(--red);   animation: bounceIn .4s ease; text-transform: uppercase; }
-    .result-tie  { font-size: 20px; font-weight: 800; color: var(--gold);  animation: bounceIn .4s ease; }
-    .prize-display { font-size: 38px; font-weight: 800; color: var(--green); margin-top: 2px; }
+    .result-tie  { font-size: 20px; font-weight: 800; color: var(--yellow); animation: bounceIn .4s ease; }
+    .prize-display { font-size: 38px; font-weight: 800; color: var(--mint); margin-top: 2px; }
     @keyframes bounceIn {
       0%  { transform: scale(.3);  opacity: 0; }
       60% { transform: scale(1.1); }
@@ -212,13 +247,13 @@
       100%{ transform: scale(1);   opacity: 1; }
     }
     .multiplier-badge {
-      display: inline-block; background: var(--gold); color: #000;
+      display: inline-block; background: var(--yellow); color: #000;
       font-weight: 800; font-size: 12px; padding: 2px 7px; border-radius: 5px;
     }
 
     .dice-stats { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
     .stat-chip { background: var(--bg2); border: 1px solid #1e3a5f; border-radius: 10px; padding: 12px 18px; text-align: center; }
-    .stat-chip .sv { font-size: 26px; font-weight: 800; color: var(--gold); }
+    .stat-chip .sv { font-size: 26px; font-weight: 800; color: var(--mint); }
     .stat-chip .sl { font-size: 11px; color: var(--gray); text-transform: uppercase; margin-top: 2px; }
 
     /* ── BLACKJACK TAB ───────────────────────── */
@@ -238,13 +273,13 @@
       gap: 16px; width: 100%;
     }
     .bj-bankroll { text-align: center; }
-    .bj-bankroll .bv { font-size: 30px; font-weight: 800; color: var(--green); }
+    .bj-bankroll .bv { font-size: 30px; font-weight: 800; color: var(--mint); }
     .bj-bankroll .bl { font-size: 11px; color: var(--gray); text-transform: uppercase; }
 
     .bj-table {
-      background: var(--felt); border: 3px solid var(--gold2);
+      background: var(--felt); border: 3px solid var(--mint);
       border-radius: 20px; padding: 22px 28px;
-      width: 100%; max-width: 600px;
+      width: 100%;
     }
 
     .zone-label {
@@ -294,13 +329,13 @@
     .wager-lbl { font-size: 13px; color: var(--gray); margin-bottom: 8px; }
     .wager-row { display: flex; align-items: center; gap: 12px; justify-content: center; }
     .wager-input {
-      background: var(--bg); border: 2px solid var(--gold);
-      color: var(--gold); font-size: 22px; font-weight: 800;
+      background: var(--bg); border: 2px solid var(--mint);
+      color: var(--mint); font-size: 22px; font-weight: 800;
       padding: 7px 14px; border-radius: 8px;
       width: 110px; text-align: center;
     }
     .wager-input:focus { outline: none; }
-    .wager-slider { width: 180px; accent-color: var(--gold); }
+    .wager-slider { width: 180px; accent-color: var(--mint); }
 
     /* BJ action buttons */
     .bj-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
@@ -311,29 +346,29 @@
     }
     .btn-bj:hover:not(:disabled) { transform: translateY(-2px); }
     .btn-bj:disabled { opacity: .4; cursor: not-allowed; }
-    .btn-deal    { background: var(--gold);  color: #000; }
+    .btn-deal    { background: var(--mint);  color: var(--dark); font-weight: 700; }
     .btn-hit     { background: var(--green); color: #000; }
     .btn-stand   { background: #e67e22;      color: #fff; }
     .btn-double  { background: #9b59b6;      color: #fff; }
     .btn-split   { background: var(--blue);  color: #fff; }
-    .btn-newhand { background: var(--gold2); color: #000; }
+    .btn-newhand { background: var(--mint2); color: var(--dark); font-weight: 700; }
 
     .bj-result {
       min-height: 50px; display: flex; flex-direction: column;
       align-items: center; justify-content: center; text-align: center;
     }
     .bj-rtxt { font-size: 26px; font-weight: 800; animation: bounceIn .4s ease; }
-    .bj-win  { color: var(--green); }
+    .bj-win  { color: var(--mint);   }
     .bj-lose { color: var(--red);   }
-    .bj-push { color: var(--gray);  }
-    .bj-bjtxt{ color: var(--gold);  }
+    .bj-push { color: var(--gray2); }
+    .bj-bjtxt{ color: var(--yellow);}
 
     .bj-stats { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
     /* ── LEADERBOARD ─────────────────────────── */
     .leaderboard { width: 270px; flex-shrink: 0; }
     .lb-header {
-      font-size: 13px; font-weight: 700; color: var(--gold);
+      font-size: 13px; font-weight: 700; color: var(--mint);
       text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;
     }
     .lb-list { display: flex; flex-direction: column; gap: 5px; }
@@ -347,8 +382,8 @@
     .lb-rank    { font-size: 12px; color: var(--gray); width: 20px; text-align: right; flex-shrink: 0; }
     .lb-name    { flex: 1; font-size: 13px; font-weight: 600; }
     .lb-meta    { font-size: 10px; color: var(--gray); margin-top: 1px; }
-    .lb-amount  { font-size: 14px; font-weight: 800; color: var(--green); }
-    .lb-amount.zero { color: var(--gray); }
+    .lb-amount  { font-size: 14px; font-weight: 800; color: var(--mint); }
+    .lb-amount.zero { color: var(--gray2); }
 
     /* ── ADMIN ───────────────────────────────── */
     .admin-main { flex: 1; max-width: 580px; }
@@ -379,7 +414,7 @@
       border: none; border-radius: 8px; cursor: pointer; transition: all .15s;
     }
     .abtn:hover { transform: translateY(-1px); }
-    .abtn.p { background: var(--gold);  color: #000; }
+    .abtn.p { background: var(--mint);  color: var(--dark); font-weight: 700; }
     .abtn.s { background: var(--blue);  color: #fff; }
     .abtn.d { background: var(--red);   color: #fff; }
     .admin-msg { font-size: 13px; margin-top: 8px; }
@@ -387,7 +422,7 @@
     /* ── TOASTS ──────────────────────────────── */
     .toast {
       position: fixed; bottom: 24px; right: 24px;
-      background: var(--bg2); border: 1px solid var(--gold);
+      background: var(--bg2); border: 1px solid var(--mint);
       color: var(--white); padding: 11px 18px;
       border-radius: 10px; font-size: 14px;
       z-index: 10000; animation: toastIn .3s ease; max-width: 290px;
@@ -411,12 +446,10 @@
 <div id="auth-screen">
   <div class="auth-card">
     <div class="auth-logo">
-      <div style="display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:4px">
-        <div style="background:var(--gold);border-radius:10px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;font-style:italic">PH</div>
-      </div>
-      <div style="font-size:40px">🎰</div>
+      <img src="logo-mark.png" alt="planHub" style="height:72px;width:auto;margin-bottom:8px">
+      <div style="font-size:32px;margin-bottom:4px">🎰</div>
     </div>
-    <div class="auth-title"><span style="color:var(--gold)">PlanHub</span> Casino</div>
+    <div class="auth-title"><span style="color:var(--mint)">planHub</span> Casino</div>
     <div class="auth-sub">Sign in with your PlanHub Google account to play</div>
     <button class="btn-google" onclick="signIn()">
       <svg width="20" height="20" viewBox="0 0 48 48">
@@ -435,9 +468,9 @@
 <div id="app">
   <header>
     <div class="header-logo">
-      <div class="ph-logo-mark">PH</div>
+      <img src="logo-mark.png" alt="planHub">
       <div>
-        <div class="header-title"><span>PlanHub</span> Casino</div>
+        <div class="header-title"><span class="brand">planHub</span> Casino</div>
         <div class="header-subtitle">🎰 Sales Contest</div>
       </div>
     </div>
@@ -459,12 +492,31 @@
 
   <!-- ── DICE TAB ── -->
   <div id="tab-dice" class="tab-content active">
+
+    <!-- Left: Table Rules -->
+    <div class="table-rules">
+      <div class="tr-header">🎲 Table Rules</div>
+      <div class="tr-rule"><span class="tr-icon">🎯</span><div>Roll <strong>2 dice</strong> vs the computer — higher total wins</div></div>
+      <div class="tr-rule"><span class="tr-icon">🏆</span><div>Win = <strong>prize amount</strong> added to your bankroll</div></div>
+      <div class="tr-rule"><span class="tr-icon">❌</span><div>Loss = roll consumed, <strong>no money deducted</strong></div></div>
+      <div class="tr-rule"><span class="tr-icon">🤝</span><div>Tie = <strong>Double or Nothing</strong> — auto re-roll with prize multiplied up to <strong>8×</strong></div></div>
+      <hr class="tr-divider">
+      <div class="tr-header" style="margin-top:4px">💰 Earning Rolls</div>
+      <div class="tr-rule"><span class="tr-icon">💼</span><div><strong>AEs:</strong> 1 roll per Closed Won deal today</div></div>
+      <div class="tr-rule"><span class="tr-icon">📞</span><div><strong>SDRs:</strong> 1 roll per warm transfer today</div></div>
+      <div class="tr-rule"><span class="tr-icon">🔄</span><div>Rolls sync automatically every <strong>30 min</strong></div></div>
+      <hr class="tr-divider">
+      <div class="tr-rule" style="font-size:11px;color:var(--gray2)"><span class="tr-icon">🃏</span><div>Win at dice to unlock the <strong>Blackjack Table</strong></div></div>
+    </div>
+
     <div class="dice-main">
       <div class="player-greeting">
         <h2 id="dice-greeting">Welcome!</h2>
         <div class="rolls-badge">Rolls Available: <span id="rolls-count">0</span></div>
         <div class="sync-note" id="sync-note"></div>
       </div>
+      <!-- Surprise mode banner -->
+      <div class="surprise-banner" id="surprise-banner">🎁 SURPRISE MODE ACTIVE — Mystery Prize!</div>
 
       <div class="dice-arena">
         <div class="dice-row">
@@ -515,6 +567,25 @@
 
   <!-- ── BLACKJACK TAB ── -->
   <div id="tab-blackjack" class="tab-content">
+
+    <!-- Left: Table Rules -->
+    <div class="table-rules">
+      <div class="tr-header">🃏 Table Rules</div>
+      <div class="tr-rule"><span class="tr-icon">🃏</span><div>Standard <strong>52-card deck</strong>, shuffled fresh each hand</div></div>
+      <div class="tr-rule"><span class="tr-icon">🎯</span><div>Goal: beat the dealer without going <strong>over 21</strong></div></div>
+      <div class="tr-rule"><span class="tr-icon">⭐</span><div><strong>Blackjack</strong> (Ace + 10-value) pays <strong>3:2</strong></div></div>
+      <div class="tr-rule"><span class="tr-icon">🏦</span><div>Dealer <strong>hits soft 17</strong>, stands on hard 17+</div></div>
+      <hr class="tr-divider">
+      <div class="tr-header" style="margin-top:4px">🎮 Player Actions</div>
+      <div class="tr-rule"><span class="tr-icon">👆</span><div><strong>Hit</strong> — draw another card</div></div>
+      <div class="tr-rule"><span class="tr-icon">✋</span><div><strong>Stand</strong> — end your turn</div></div>
+      <div class="tr-rule"><span class="tr-icon">✌️</span><div><strong>Double Down</strong> — double wager, one card only (first 2 cards)</div></div>
+      <div class="tr-rule"><span class="tr-icon">🔀</span><div><strong>Split</strong> — split matching ranks into 2 hands</div></div>
+      <hr class="tr-divider">
+      <div class="tr-rule"><span class="tr-icon">↔️</span><div><strong>Tie = Push</strong> — wager returned, no win or loss</div></div>
+      <div class="tr-rule"><span class="tr-icon">💰</span><div>Wager from your <strong>dice winnings</strong> bankroll only</div></div>
+    </div>
+
     <div class="bj-main" id="bj-main">
       <div class="bj-locked" id="bj-locked">
         <div class="lock-icon">🔒</div>
@@ -826,8 +897,10 @@ function initApp() {
   // Settings listener
   db.ref('planhub_casino/settings').on('value', s => {
     settings = s.val() || {};
-    document.getElementById('contest-label').textContent = settings.contestLabel || 'PlanHub Casino';
+    document.getElementById('contest-label').textContent = settings.contestLabel || 'planHub Casino';
     syncAdminUI();
+    // Refresh dice UI so surprise banner updates immediately
+    if (Object.keys(myData).length) refreshDiceUI();
   });
 
   // Last sync display
@@ -892,6 +965,17 @@ function refreshDiceUI() {
     document.getElementById('bj-lock-icon').textContent = '🃏';
   } else {
     document.getElementById('bj-lock-icon').textContent = '🔒';
+  }
+
+  // Surprise mode banner
+  const banner = document.getElementById('surprise-banner');
+  if (banner) {
+    banner.classList.toggle('visible', !!(settings.surpriseMode));
+    if (settings.surpriseMode && settings.surpriseModeMin != null && settings.surpriseModeMax != null) {
+      banner.textContent = `🎁 SURPRISE MODE — Win $${settings.surpriseModeMin}–$${settings.surpriseModeMax}!`;
+    } else if (settings.surpriseMode) {
+      banner.textContent = '🎁 SURPRISE MODE ACTIVE — Mystery Prize!';
+    }
   }
 }
 
@@ -1438,7 +1522,7 @@ function launchConfetti() {
   const cv=document.getElementById('confetti-canvas');
   const ctx=cv.getContext('2d');
   cv.width=window.innerWidth; cv.height=window.innerHeight;
-  const COLORS=['#f1c40f','#2ecc71','#3498db','#e74c3c','#9b59b6','#e67e22','#fff'];
+  const COLORS=['#00b894','#70d7c2','#c2eee5','#fdcb6e','#0984e3','#e17055','#fff'];
   const pts=Array.from({length:130},()=>({
     x:Math.random()*cv.width, y:Math.random()*-cv.height*1.2,
     w:Math.random()*10+5, h:Math.random()*5+3,
