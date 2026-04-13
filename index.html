@@ -451,6 +451,7 @@
     .abtn.p { background: var(--mint);  color: var(--dark); font-weight: 700; }
     .abtn.s { background: var(--blue);  color: #fff; }
     .abtn.d { background: var(--red);   color: #fff; }
+    .abtn.nd { background: var(--yellow); color: var(--dark); }
     .admin-msg { font-size: 13px; margin-top: 8px; }
 
     /* ── TOASTS ──────────────────────────────── */
@@ -774,6 +775,12 @@
           </div>
           <button class="abtn s" onclick="grantRolls()" style="margin-bottom:1px">Grant</button>
         </div>
+      </div>
+
+      <div class="asec">
+        <h3>New Day</h3>
+        <p style="color:var(--gray);font-size:13px;margin-bottom:12px">Resets the HubSpot sync counter so today's closes and transfers earn new rolls. Player stats, rolls, and winnings are preserved.</p>
+        <button class="abtn nd" onclick="startNewDay()">🌅 Start New Contest Day</button>
       </div>
 
       <div class="asec">
@@ -1672,6 +1679,25 @@ function resetGame() {
     upd['planhub_casino/rollSyncHWM']=null;
     db.ref().update(upd);
     admMsg('Game reset.');
+  });
+}
+function startNewDay() {
+  if (!confirm('Start a new contest day?\n\nThe HubSpot sync counter will reset so today\'s closes and transfers earn new rolls.\n\nPlayer stats, rolls, and winnings are preserved.')) return;
+  const today = new Date();
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const mo = months[today.getMonth()], dd = today.getDate(), yr = today.getFullYear();
+  // Build new label: extend "Month D, YYYY" → "Month D-D, YYYY"; handles already-ranged labels
+  const existing = (settings.contestLabel || '').trim();
+  const m = existing.match(/^(\w+)\s+(\d+)[\s\-\u2013&,\d]*,\s*(\d{4})$/);
+  const newLabel = (m && m[1]===mo && parseInt(m[3])===yr)
+    ? `${mo} ${m[2]}-${dd}, ${yr}`
+    : (existing ? `${existing} & ${mo} ${dd}` : `${mo} ${dd}, ${yr}`);
+  db.ref().update({
+    'planhub_casino/rollSyncHWM': null,
+    'planhub_casino/settings/contestLabel': newLabel
+  }).then(() => {
+    document.getElementById('adm-label').value = newLabel;
+    admMsg(`New day started. Label updated to "${newLabel}"`);
   });
 }
 function changePassword() {
