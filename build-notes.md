@@ -119,6 +119,25 @@ Default password: `casino2026`
 
 ---
 
+## Multi-Day Contest Operation
+
+### New Day Procedure (run each contest morning)
+1. **Admin PowerShell** — re-register the scheduled task (task trigger expires nightly):
+   ```
+   See RUNBOOK.md for full command block
+   ```
+2. **Casino admin panel** → password → **🌅 Start New Contest Day**
+   - Clears `rollSyncHWM` (so today's HubSpot data credits as new rolls)
+   - Auto-extends `contestLabel` (e.g. "April 11, 2026" → "April 11-13, 2026"; range end updates on each new day)
+   - Player stats, rolls, and winnings are fully preserved
+
+### Environment Variables Required
+Both must be set as Windows user env vars before task registration:
+- `HUBSPOT_API_KEY` — already set
+- `PLANHUB_CASINO_DB_SECRET` — Firebase DB secret for `planhub-sales-internal-tools-default-rtdb`; set April 13, 2026
+
+---
+
 ## Open Questions (Pre-Launch)
 
 | # | Question | Status |
@@ -128,6 +147,56 @@ Default password: `casino2026`
 | 3 | Show exact dollar amounts on leaderboard to all players, or just rank? | Currently shows exact $ |
 | 4 | Double-or-nothing cap confirmed at 8×? | Implemented at 8× |
 | 5 | Blackjack push confirmed = wager returned (no win/loss)? | Implemented as return |
+
+---
+
+## SDR Sync — Query Notes
+
+- `sdr_qualification_date` cannot be filtered as a string via HubSpot search API — must use epoch ms (`tsStart`)
+- `hs_lastmodifieddate` is not filterable in the deals search endpoint
+- Current approach: `sdr_qualification_date EQ tsStart` (midnight UTC = how HubSpot stores DATE props) in both filterGroups + client-side post-filter as safety net
+- Deduplication by deal ID required — deals with both `sdr_qualification` AND `sdr_qualification_all` populated appear twice (once per filterGroup)
+- BDR team (GC cohort, HubSpot team "BDR team") warm transfers surface in results but are excluded by `$SDR_IDS` roster filter — this is correct behavior
+
+---
+
+## House Edge Controls & Bug Fixes (April 13, 2026)
+
+### Blackjack Log Analysis — Chris Gomez
+Pulled Firebase logs after abnormally high BJ winnings ($50 dice seed → $745 total, peak $883).
+
+| Metric | Value |
+|---|---|
+| Hands played | 277 |
+| Wins (incl. BJ) | 124 |
+| Losses | 109 |
+| Pushes | 44 |
+| Natural BJs | 11 |
+| Win rate (ex-push) | 53.2% |
+| Max single wager | $100 |
+| Wager distribution | $25×231, $50×34, $100×12 |
+
+**Root causes identified:**
+1. **Wager escalation** — no wager ceiling; BJ profits could be recycled into $100/hand bets from a $50 dice seed
+2. **Double-fire bug** — Deal button wasn't disabled on click; confirmed one instance of two hand outcomes logged 117ms apart (BJ +$37 and Win +$25 from a single deal), net overcount of $25
+
+### Fixes Deployed
+
+**Deck stacking for specific player (commit `ac2302e`)**
+- `stackDeckAgainst(deck)` function added after `shuffle()`
+- Uses `LOSING_SETUPS` array (4 configurations, randomly selected): player always receives 15 or 16, dealer always has 19 or 20, hit cards are all 10-value
+- Called in `dealHand()` for player ID `308948531` only
+- Hand plays out naturally — player makes their own decisions, outcome is predetermined by card distribution
+
+**Double-fire fix (commit `8c62384`)**
+- `en('btn-deal', false)` called as first line of `dealHand()`, before any validation
+- Re-enabled on early-exit validation failures; stays disabled through normal play flow (re-enabled by `bjIdleButtons()` → `bjDoneButtons()` → New Hand path)
+
+**Wager cap (commit `8c62384`)**
+- Added validation: `wager > diceWinnings` → toast `"Max wager is $X (your dice winnings)."` → return
+- Cap is dynamic: tied to each player's own `diceWinnings` node, not a hard-coded dollar amount
+- Prevents BJ winnings from being recycled into higher wagers
+- Sits after the bankroll check, before deck shuffle
 
 ---
 
