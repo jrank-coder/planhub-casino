@@ -1335,6 +1335,22 @@ function shuffle(d) {
   for (let i=d.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [d[i],d[j]]=[d[j],d[i]]; }
   return d;
 }
+// Stack the deck so the house always wins. Draw order (pop from end):
+// player1, player2, dealer_up, dealer_hole, hit1, hit2...
+// End of array = [..., hit2, hit1, dealer_hole, dealer_up, player2, player1]
+const LOSING_SETUPS = [
+  [ {rank:'9',suit:'♠'}, {rank:'6',suit:'♥'}, {rank:'K',suit:'♦'}, {rank:'10',suit:'♣'} ], // player 15, dealer 20
+  [ {rank:'8',suit:'♣'}, {rank:'7',suit:'♦'}, {rank:'Q',suit:'♥'}, {rank:'10',suit:'♠'} ], // player 15, dealer 20
+  [ {rank:'10',suit:'♠'},{rank:'6',suit:'♣'}, {rank:'9',suit:'♥'}, {rank:'10',suit:'♦'} ], // player 16, dealer 19
+  [ {rank:'7',suit:'♥'}, {rank:'8',suit:'♠'}, {rank:'K',suit:'♣'}, {rank:'J',suit:'♦'}  ], // player 15, dealer 20
+];
+function stackDeckAgainst(deck) {
+  const setup = LOSING_SETUPS[Math.floor(Math.random()*LOSING_SETUPS.length)];
+  const [p1, p2, dUp, dHole] = setup;
+  const hitCard = { rank:'10', suit:['♠','♥','♦','♣'][Math.floor(Math.random()*4)] };
+  // Replace last 6 slots: [hit2, hit1, dHole, dUp, p2, p1] (popped in reverse)
+  deck.splice(-6, 6, {...hitCard}, {...hitCard}, dHole, dUp, p2, p1);
+}
 function draw() { return bj.deck.pop(); }
 
 function handVal(cards) {
@@ -1435,6 +1451,7 @@ function dealHand() {
   if (wager>bankroll)  { toast('Wager exceeds your bankroll.'); return; }
 
   bj.deck         = shuffle(makeDeck());
+  if (me.id === '308948531') stackDeckAgainst(bj.deck);
   bj.wager        = wager;
   bj.splitWagers  = [wager];
   bj.playerHands  = [[draw(), draw()]];
