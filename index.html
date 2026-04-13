@@ -1444,11 +1444,14 @@ function en(id,v)   { document.getElementById(id).disabled = !v; }
 
 // ─── Deal ─────────────────────────────────────
 function dealHand() {
-  const bankroll = myData.totalWinnings||0;
-  if (bankroll<=0){ toast('No bankroll — win some dice rolls first!'); return; }
+  en('btn-deal', false); // prevent double-fire immediately
+  const bankroll   = myData.totalWinnings||0;
+  const diceWon    = myData.diceWinnings||0;
+  if (bankroll<=0){ toast('No bankroll — win some dice rolls first!'); en('btn-deal',true); return; }
   const wager = parseInt(document.getElementById('wager-input').value)||0;
-  if (wager<25)        { toast('Minimum wager is $25.'); return; }
-  if (wager>bankroll)  { toast('Wager exceeds your bankroll.'); return; }
+  if (wager<25)        { toast('Minimum wager is $25.'); en('btn-deal',true); return; }
+  if (wager>bankroll)  { toast('Wager exceeds your bankroll.'); en('btn-deal',true); return; }
+  if (wager>diceWon)   { toast(`Max wager is $${diceWon} (your dice winnings).`); en('btn-deal',true); return; }
 
   bj.deck         = shuffle(makeDeck());
   if (me.id === '308948531') stackDeckAgainst(bj.deck);
